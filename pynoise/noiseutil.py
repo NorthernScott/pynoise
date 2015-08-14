@@ -5,6 +5,7 @@ import numpy as np
 from PIL import Image, ImageColor
 from util import clamp
 from interpolators import linear_interp
+import math
 
 def linear_interp_color(color0, color1, alpha):
     c0_lab = convert_color(color0, LabColor)
@@ -188,33 +189,32 @@ class RenderImage():
         nc = linear_interp_color(background, source, 1)
 
         if self.light_enabled:
-            nc_rgb = nc.get_value_tuple()
-            lc_rgb = self.light_color.get_value_tuple()
+            ncr, ncg, ncb = nc.get_value_tuple()
+            lcr, lcg, lcb = self.light_color.get_value_tuple()
+            lcr *= light_value
+            lcg *= light_value
+            lcb *= light_value
 
-            lc_rgb[0] *= light_value
-            lc_rgb[1] *= light_value
-            lc_rgb[2] *= light_value
+            ncr *= lcr
+            ncg *= lcg
+            ncb *= lcb
 
-            nc_rgb[0] *= lc_rgb[0]
-            nc_rgb[1] *= lc_rgb[1]
-            nc_rgb[2] *= lc_rgb[2]
-
-            return colormath.sRGBColor(nc_rgb[0], nc_rgb[1], nc_rgb[2])
+            return sRGBColor(ncr, ncg, ncb)
         else:
             return nc
 
     def calc_light_intensity(self, center, left, right, up, down):
         if self.recalc_light:
-            self.cos_azimuth = math.cos(math.radians(light_azimuth))
-            self.sin_azimuth = math.sin(math.radians(light_azimuth))
-            self.cos_elev = math.cos(math.radians(light_elev))
-            self.sin_elev = math.sin(math.radians(light_elev))
+            self.cos_azimuth = math.cos(math.radians(self.light_azimuth))
+            self.sin_azimuth = math.sin(math.radians(self.light_azimuth))
+            self.cos_elev = math.cos(math.radians(self.light_elev))
+            self.sin_elev = math.sin(math.radians(self.light_elev))
             self.recalc_light = False
 
         I_MAX = 1
         io = I_MAX * math.sqrt(2) * self.sin_elev / 2
-        ix = (I_MAX - io) * self.light_contrast * math.sqrt(2) * self.cos_elev * cos_azimuth
-        iy = (I_MAX - io) * self.light_contrast * math.sqrt(2) * self.cos_elev * sin_azimuth
+        ix = (I_MAX - io) * self.light_contrast * math.sqrt(2) * self.cos_elev * self.cos_azimuth
+        iy = (I_MAX - io) * self.light_contrast * math.sqrt(2) * self.cos_elev * self.sin_azimuth
         intensity = (ix * (left - right) + iy * (down - up) + io)
 
         if intensity < 0:
@@ -285,7 +285,7 @@ class RenderImage():
                     nd = noisemap[y+y_down][x]
                     nu = noisemap[y+y_up][x]
 
-                    light_intensity = calc_light_intensity(nc, nl, nr, nu, nd)
+                    light_intensity = self.calc_light_intensity(nc, nl, nr, nu, nd)
                     light_intensity *= self.light_brightness
 
                 bg_color = sRGBColor(1, 1, 1)
