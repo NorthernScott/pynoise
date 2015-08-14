@@ -153,15 +153,15 @@ def grayscale_gradient():
 def terrain_gradient():
     grad = GradientColor()
 
-    grad.add_gradient_point(-1.00, sRGBColor(  0,   0, 128))
-    grad.add_gradient_point(-0.20, sRGBColor( 32,  64, 128))
-    grad.add_gradient_point(-0.04, sRGBColor( 64,  96, 192))
-    grad.add_gradient_point(-0.02, sRGBColor(192, 192, 128))
-    grad.add_gradient_point( 0.00, sRGBColor(  0, 192,   0))
-    grad.add_gradient_point( 0.25, sRGBColor(192, 192,   0))
-    grad.add_gradient_point( 0.50, sRGBColor(160,  96,  64))
-    grad.add_gradient_point( 0.75, sRGBColor(128, 255, 255))
-    grad.add_gradient_point( 1.00, sRGBColor(255, 255, 255))
+    grad.add_gradient_point(-1.00, sRGBColor(  0,   0, 128, is_upscaled=True))
+    grad.add_gradient_point(-0.20, sRGBColor( 32,  64, 128, is_upscaled=True))
+    grad.add_gradient_point(-0.04, sRGBColor( 64,  96, 192, is_upscaled=True))
+    grad.add_gradient_point(-0.02, sRGBColor(192, 192, 128, is_upscaled=True))
+    grad.add_gradient_point( 0.00, sRGBColor(  0, 192,   0, is_upscaled=True))
+    grad.add_gradient_point( 0.25, sRGBColor(192, 192,   0, is_upscaled=True))
+    grad.add_gradient_point( 0.50, sRGBColor(160,  96,  64, is_upscaled=True))
+    grad.add_gradient_point( 0.75, sRGBColor(128, 255, 255, is_upscaled=True))
+    grad.add_gradient_point( 1.00, sRGBColor(255, 255, 255, is_upscaled=True))
 
     return grad
 
