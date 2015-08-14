@@ -254,21 +254,22 @@ class Multiply(Module):
         return self.sourceModules[0].get_value(x, y, z) * self.sourceModules[0].get_value(x, y, z)
 
 class Perlin(Module):
-    def __init__(self, frequency=1, lacunarity=2, octave=6, persistence=0.5, seed=0):
+    def __init__(self, frequency=1, lacunarity=2, octave=6, persistence=0.5, seed=0, quality=Quality.std):
         self.frequency = frequency
         self.lacunarity = lacunarity
         self.octaves = octave
         self.seed = seed
         self.persistence = persistence
+        self.quality = quality
 
     def get_value(self, x, y, z):
         value = 0.0
         signal = 0.0
         curPersistence = 1.0
 
-        x *= frequency
-        y *= frequency
-        z *= frequency
+        x *= self.frequency
+        y *= self.frequency
+        z *= self.frequency
 
         for i in range(0, self.octaves):
             seed = (self.seed + i) & 0xffffffff
@@ -278,7 +279,7 @@ class Perlin(Module):
             x *= self.lacunarity
             y *= self.lacunarity
             z *= self.lacunarity
-            curPersistence *= persistence
+            curPersistence *= self.persistence
 
         return value
 
