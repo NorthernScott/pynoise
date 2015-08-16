@@ -2,3 +2,9 @@ __pycache__/
 test
 venv/
 test.*
+.pypirc
+_*/
+Makefile
+MANIFEST
+conf.py
+dist/
