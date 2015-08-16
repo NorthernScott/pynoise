@@ -1,6 +1,6 @@
-from interpolators import scurve3, scurve5, linear_interp
-from vectortable import vector
-from quality import Quality
+from pynoise.interpolators import scurve3, scurve5, linear_interp
+from pynoise.vectortable import vector
+from pynoise.quality import Quality
 
 X_NOISE_GEN = 1619
 Y_NOISE_GEN = 31337

@@ -1,9 +1,9 @@
 import math
-from quality import Quality
+from pynoise.quality import Quality
 
-from noise import gradient_coherent_noise_3d
+from pynoise.noise import gradient_coherent_noise_3d
 from sortedcontainers import SortedDict, SortedList
-from util import clamp
+from pynoise.util import clamp
 
 class NoiseModule():
     def get_source_module(self, index):
@@ -121,7 +121,7 @@ class Const(NoiseModule):
         self.const = const
 
     def get_value(self, x, y, z):
-        return const
+        return self.const
 
 class Curve(NoiseModule):
     def __init__(self):
