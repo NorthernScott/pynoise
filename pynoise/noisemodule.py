@@ -2,7 +2,7 @@ import math
 
 from pynoise.quality import Quality
 from pynoise.noise import gradient_coherent_noise_3d
-from pynoise.interpolators import linear_interp
+from pynoise.interpolators import linear_interp, cubic_interp
 from pynoise.util import clamp
 
 from sortedcontainers import SortedDict, SortedList
@@ -131,9 +131,19 @@ class Const(NoiseModule):
         return self.const
 
 class Curve(NoiseModule):
-    def __init__(self):
+    """ Maps the output of source0 to a cubic spline.
+    points is a list of tuples that specify input and outputs.
+    Example: [(0, 0.1), (0.1,0.2),...]
+
+    A minimum of 4 points must be added.
+    """
+    def __init__(self, source0, points=None):
         self.control_points = SortedDict()
-        self.sourceModules = [None] * 1
+        self.source0 = source0
+
+        if points is not None:
+            for point in points:
+                self.add_control_point(point[0], point[1])
 
     def add_control_point(self, input, output):
         self.control_points[input] = output
@@ -142,10 +152,10 @@ class Curve(NoiseModule):
         self.control_points = SortedDict()
 
     def get_value(self, x, y, z):
-        assert(self.sourceModules[0] is not None)
+        assert(self.source0 is not None)
         assert(len(self.control_points.keys()) >= 4)
 
-        value = self.sourceModules[0].get_value(x, y, z)
+        value = self.source0.get_value(x, y, z)
 
         for i, k in enumerate(self.control_points.keys()):
             if value < k:

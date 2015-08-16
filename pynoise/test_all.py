@@ -50,3 +50,21 @@ def test_clamp():
     assert clamp0.get_value(0,0,0) == 0.5
     assert clamp1.get_value(0,0,0) == 0.8
     assert clamp2.get_value(0,0,0) == 0.75
+
+def test_curve():
+    const0 = Const(1)
+    points = [(0.1, 0.2), (0.2, 0.3), (0.3, 0.4), (0.4, 0.5)]
+    curve = Curve(const0, points=points)
+    curve.get_value(0,0,0)
+
+    curve1 = Curve(const0)
+    curve1.add_control_point(0.1, 0.2)
+    curve1.add_control_point(0.2, 0.3)
+    curve1.add_control_point(0.3, 0.4)
+    curve1.add_control_point(0.4, 0.5)
+    curve.get_value(0,0,0)
+
+def test_cylinders():
+    cylinders = Cylinders()
+    cylinders1 = Cylinders(frequency=4)
+    assert cylinders1.get_value(0,0,0) == cylinders.get_value(0,0,0)
