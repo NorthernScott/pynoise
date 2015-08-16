@@ -68,3 +68,11 @@ def test_cylinders():
     cylinders = Cylinders()
     cylinders1 = Cylinders(frequency=4)
     assert cylinders1.get_value(0,0,0) == cylinders.get_value(0,0,0)
+
+def test_displace():
+    c0 = Const(0)
+    b1 = Billow()
+
+    displace = Displace(c0, c0, c0, b1)
+
+    assert b1.get_value(0,0,0) == displace.get_value(0,0,0)

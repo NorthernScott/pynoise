@@ -184,6 +184,10 @@ class Curve(NoiseModule):
         )
 
 class Cylinders(NoiseModule):
+    """ Outputs a series of concentric cyliners centered around 0,y,0.
+    There is a new cylinder every `frequency` lengths from origin. Default
+    frequency is 1.
+    """
     def __init__(self, frequency=1):
         self.frequency = frequency
 
@@ -199,20 +203,27 @@ class Cylinders(NoiseModule):
         return 1.0 - (nearest * 4.0)
 
 class Displace(NoiseModule):
-    def __init__(self):
-        self.sourceModules = [None] * 4
+    """ Displaces source3 output by the outputs of source0, source1, and source2.
+    source0 adjusts the x values. source1 adjusts the y value and source2 adjusts
+    the z value.
+    """
+    def __init__(self, source0, source1, source2, source3):
+        self.source0 = source0
+        self.source1 = source1
+        self.source2 = source2
+        self.source3 = source3
 
     def get_value(self, x, y, z):
-        assert(self.sourceModules[0] is not None)
-        assert(self.sourceModules[1] is not None)
-        assert(self.sourceModules[2] is not None)
-        assert(self.sourceModules[3] is not None)
+        assert(self.source0 is not None)
+        assert(self.source1 is not None)
+        assert(self.source2 is not None)
+        assert(self.source3 is not None)
 
-        xD = x + (self.sourceModules[0].get_value(x, y, z))
-        yD = y + (self.sourceModules[1].get_value(x, y, z))
-        zD = z + (self.sourceModules[2].get_value(x, y, z))
+        xD = x + (self.source0.get_value(x, y, z))
+        yD = y + (self.source1.get_value(x, y, z))
+        zD = z + (self.source2.get_value(x, y, z))
 
-        return self.sourceModules[3].get_value(xD, yD, zD)
+        return self.source3.get_value(xD, yD, zD)
 
 class Exponent(NoiseModule):
     def __init__(self, exponent=1):
