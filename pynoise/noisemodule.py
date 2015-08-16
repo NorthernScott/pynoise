@@ -6,38 +6,29 @@ from sortedcontainers import SortedDict, SortedList
 from pynoise.util import clamp
 
 class NoiseModule():
-    def get_source_module(self, index):
-        if sourceModules[index] is None:
-            raise ValueError('No module at index.')
-        else:
-            return self.sourceModules[index]
-
     def get_value(self, x, y, z):
         raise NotImplementedError('Not Implemented.')
 
-    def set_source_module(self, index, module):
-        self.sourceModules[index] = module
-
 class Abs(NoiseModule):
     """ Returns the absolute value of the given source module. """
-    def __init__(self):
-        self.sourceModules = [None] * 1
+    def __init__(self, source0):
+        self.source0 = source0
 
     def get_value(self, x, y, z):
-        assert (self.sourceModules[0] is not None)
+        assert (self.source0 is not None)
 
-        return math.abs(self.sourceModules[0].getValue(x, y, z))
+        return abs(self.source0.get_value(x, y, z))
 
 class Add(NoiseModule):
-    def __init__(self):
-        self.sourceModules = [None] * 2
+    def __init__(self, source0, source1):
+        self.source0 = source0
+        self.source1 = source1
 
     def get_value(self, x, y, z):
-        assert (self.sourceModules[0] is not None)
-        assert (self.sourceModules[0] is not None)
+        assert (self.source0 is not None)
+        assert (self.source1 is not None)
 
-        return self.sourceModules[0].getValue(x, y, z) + \
-        self.sourceModules[1].getValue(x, y, z)
+        return self.source0.get_value(x, y, z) + self.source1.get_value(x, y, z)
 
 class Billow(NoiseModule):
     def __init__(self, frequency=1, lacunarity=2, quality=Quality.std,
