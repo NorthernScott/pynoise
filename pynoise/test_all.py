@@ -36,3 +36,17 @@ def test_blend():
     blend = Blend(const0, const1, const0)
 
     assert blend.get_value(0,0,0) == 0.5
+
+def test_checkerboard():
+    checkerboard = Checkerboard()
+
+def test_clamp():
+    const0 = Const(0.75)
+
+    clamp0 = Clamp(const0, upper_bound=0.5)
+    clamp1 = Clamp(const0, lower_bound=0.8)
+    clamp2 = Clamp(const0)
+
+    assert clamp0.get_value(0,0,0) == 0.5
+    assert clamp1.get_value(0,0,0) == 0.8
+    assert clamp2.get_value(0,0,0) == 0.75

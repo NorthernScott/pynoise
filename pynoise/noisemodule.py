@@ -102,21 +102,24 @@ class Checkerboard(NoiseModule):
             return 1
 
 class Clamp():
-    def __init__(self, lower_bound=-1, upper_bound=1):
+    """ Clamps a source between lower_bound and upper_bound.
+    lower_bound is defaulted to -1 and upper_bound defaults to 1.
+    """
+    def __init__(self, source0, lower_bound=-1, upper_bound=1):
         self.lower_bound = lower_bound
         self.upper_bound = upper_bound
 
-        self.sourceModules = [None] * 1
+        self.source0 = source0
 
     def get_value(self, x, y, z):
-        assert (self.sourceModules[0] is not None)
+        assert (self.source0 is not None)
 
-        value = self.sourceModules[0].get_value(x, y, z)
+        value = self.source0.get_value(x, y, z)
 
-        if value < lower_bound:
-            return lower_bound
-        elif value > upper_bound:
-            return upper_bound
+        if value < self.lower_bound:
+            return self.lower_bound
+        elif value > self.upper_bound:
+            return self.upper_bound
         else:
             return value
 
