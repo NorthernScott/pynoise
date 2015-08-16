@@ -5,7 +5,7 @@ from noise import gradient_coherent_noise_3d
 from sortedcontainers import SortedDict, SortedList
 from util import clamp
 
-class Module():
+class NoiseModule():
     def get_source_module(self, index):
         if sourceModules[index] is None:
             raise ValueError('No module at index.')
@@ -18,7 +18,8 @@ class Module():
     def set_source_module(self, index, module):
         self.sourceModules[index] = module
 
-class Abs(Module):
+class Abs(NoiseModule):
+    """ Returns the absolute value of the given source module. """
     def __init__(self):
         self.sourceModules = [None] * 1
 
@@ -27,7 +28,7 @@ class Abs(Module):
 
         return math.abs(self.sourceModules[0].getValue(x, y, z))
 
-class Add(Module):
+class Add(NoiseModule):
     def __init__(self):
         self.sourceModules = [None] * 2
 
@@ -36,9 +37,9 @@ class Add(Module):
         assert (self.sourceModules[0] is not None)
 
         return self.sourceModules[0].getValue(x, y, z) + \
-        self.srouceModules[1].getValue(x, y, z)
+        self.sourceModules[1].getValue(x, y, z)
 
-class Billow(Module):
+class Billow(NoiseModule):
     def __init__(self, frequency=1, lacunarity=2, quality=Quality.std,
         octaves=6, persistence=0.5, seed=0):
 
@@ -70,7 +71,7 @@ class Billow(Module):
 
         return value
 
-class Blend(Module):
+class Blend(NoiseModule):
     def __init__(self):
         self.sourceModules = [None] * 3
 
@@ -85,7 +86,7 @@ class Blend(Module):
 
         return linear_interp(v1, v1, alpha)
 
-class Checkerboard(Module):
+class Checkerboard(NoiseModule):
     def get_value(self, x, y, z):
         ix = int(math.floor(x))
         iy = int(math.floor(y))
@@ -115,14 +116,14 @@ class Clamp():
         else:
             return value
 
-class Const(Module):
+class Const(NoiseModule):
     def __init__(self, const):
         self.const = const
 
     def get_value(self, x, y, z):
         return const
 
-class Curve(Module):
+class Curve(NoiseModule):
     def __init__(self):
         self.control_points = SortedDict()
         self.sourceModules = [None] * 1
@@ -165,7 +166,7 @@ class Curve(Module):
             alpha
         )
 
-class Cylinders(Module):
+class Cylinders(NoiseModule):
     def __init__(self, frequency=1):
         self.frequency = frequency
 
@@ -180,7 +181,7 @@ class Cylinders(Module):
 
         return 1.0 - (nearest * 4.0)
 
-class Displace(Module):
+class Displace(NoiseModule):
     def __init__(self):
         self.sourceModules = [None] * 4
 
@@ -196,7 +197,7 @@ class Displace(Module):
 
         return self.sourceModules[3].get_value(xD, yD, zD)
 
-class Exponent(Module):
+class Exponent(NoiseModule):
     def __init__(self, exponent=1):
         self.exponent = exponent
         self.sourceModules = [None] * 1
@@ -208,7 +209,7 @@ class Exponent(Module):
 
         return (abs((value + 1) / 2)**self.exponent)* 2 - 1
 
-class Invert(Module):
+class Invert(NoiseModule):
     def __init__(self):
         self.sourceModules = [None] * 1
 
@@ -217,7 +218,7 @@ class Invert(Module):
 
         return -(self.sourceModules[0].get_value(x, y, z))
 
-class Max(Module):
+class Max(NoiseModule):
     def __init__(self, ):
         self.sourceModules = [None] * 2
 
@@ -230,7 +231,7 @@ class Max(Module):
 
         return max(v0, v1)
 
-class Min(Module):
+class Min(NoiseModule):
     def __init__(self):
         self.sourceModules = [None] * 2
 
@@ -243,7 +244,7 @@ class Min(Module):
 
         return min(v0, v1)
 
-class Multiply(Module):
+class Multiply(NoiseModule):
     def __init__(self):
         self.sourceModules = [None] * 2
 
@@ -253,7 +254,7 @@ class Multiply(Module):
 
         return self.sourceModules[0].get_value(x, y, z) * self.sourceModules[0].get_value(x, y, z)
 
-class Perlin(Module):
+class Perlin(NoiseModule):
     def __init__(self, frequency=1, lacunarity=2, octave=6, persistence=0.5, seed=0, quality=Quality.std):
         self.frequency = frequency
         self.lacunarity = lacunarity
@@ -283,7 +284,7 @@ class Perlin(Module):
 
         return value
 
-class Power(Module):
+class Power(NoiseModule):
     def __init__(self):
         self.sourceModules = [None] * 2
 
@@ -293,7 +294,7 @@ class Power(Module):
 
         return self.sourceModules[0].get_value(x,y,z)**self.sourceModules[1].get_value(x,y,z)
 
-class RidgedMulti(Module):
+class RidgedMulti(NoiseModule):
     def __init__(self, frequency=1, lacunarity=2, quality=Quality.std,
         octaves=6, seed=0, exponent=1, offset=1, gain=2):
         self.frequency = frequency
@@ -346,7 +347,7 @@ class RidgedMulti(Module):
 
         return (value * 1.25) - 1
 
-class RotatePoint(Module):
+class RotatePoint(NoiseModule):
     def __init__(self, xAngle=0, yAngle=0, zAngle=0):
         xCos = math.cos(math.radians(xAngle))
         yCos = math.cos(math.radians(yAngle))
@@ -379,7 +380,7 @@ class RotatePoint(Module):
 
         return self.sourceModules[0].get_value(nx, ny, nz)
 
-class ScaleBias(Module):
+class ScaleBias(NoiseModule):
     def __init__(self, bias=0, scale=1):
         self.bias = bias
         self.scale = scale
@@ -391,7 +392,7 @@ class ScaleBias(Module):
 
         return self.sourceModules[0].get_value(x, y, z) * self.scale + self.bias
 
-class ScalePoint(Module):
+class ScalePoint(NoiseModule):
     def __init__(self, sx=1, sy=1, sz=1):
         self.sx = sx
         self.sy = sy
@@ -404,7 +405,7 @@ class ScalePoint(Module):
 
         return self.sourceModules[0].get_value(x * xs, y * ys, z * zs)
 
-class Select(Module):
+class Select(NoiseModule):
     def __init__(self, edge_falloff=0, lower_bound=-1, upper_bound=1):
         self.edge_falloff = edge_falloff
         self.lower_bound = lower_bound
@@ -457,7 +458,7 @@ class Select(Module):
         else:
             self.edge_falloff = falloff
 
-class Spheres(Module):
+class Spheres(NoiseModule):
     def __init__(self, frequency=1):
         self.frequency = frequency
 
@@ -472,7 +473,7 @@ class Spheres(Module):
         nearest = min(small, large)
         return 1 - (nearest*4)
 
-class Terrace(Module):
+class Terrace(NoiseModule):
     def __init__(self, invert_terraces=False):
         self.control_points = SortedList()
         self.invert_terraces = invert_terraces
@@ -511,7 +512,7 @@ class Terrace(Module):
 
         return linear_interp(value0, value1, alpha)
 
-class TranlatePoint(Module):
+class TranlatePoint(NoiseModule):
     def __init__(self, xtran, ytran, ztran):
         self.xtran = xtran
         self.ytran = ytran
@@ -523,7 +524,7 @@ class TranlatePoint(Module):
 
         return self.sourceModules[0].get_value(x+xtran, y+ytran, z+ztran)
 
-def Turbulence(Module):
+def Turbulence(NoiseModule):
     def __init__(self, frequency=1, power=1, roughness=3, seed=0):
         self.frequency = frequency
         self.power = power
@@ -552,7 +553,7 @@ def Turbulence(Module):
 
           return self.sourceModules[0].get_value(xDistort, yDistort, zDistort)
 
-class Voronoi(Module):
+class Voronoi(NoiseModule):
     def __init__(self, displacement=1, enable_distance=False, frequency=1, seed=0):
         self.displacement = displacement
         self.enable_distance = enable_distance
