@@ -25,3 +25,14 @@ def test_add():
 
     assert add0.get_value(0,0,0) == 3
     assert add1.get_value(0,0,0) == 5
+
+def test_billow():
+    billow = Billow()
+
+def test_blend():
+    const0 = Const(0)
+    const1 = Const(1)
+
+    blend = Blend(const0, const1, const0)
+
+    assert blend.get_value(0,0,0) == 0.5

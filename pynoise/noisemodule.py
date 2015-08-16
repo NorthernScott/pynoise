@@ -1,9 +1,12 @@
 import math
-from pynoise.quality import Quality
 
+from pynoise.quality import Quality
 from pynoise.noise import gradient_coherent_noise_3d
-from sortedcontainers import SortedDict, SortedList
+from pynoise.interpolators import linear_interp
 from pynoise.util import clamp
+
+from sortedcontainers import SortedDict, SortedList
+
 
 class NoiseModule():
     def get_value(self, x, y, z):
@@ -20,6 +23,7 @@ class Abs(NoiseModule):
         return abs(self.source0.get_value(x, y, z))
 
 class Add(NoiseModule):
+    """ Adds the two given source modules together. """
     def __init__(self, source0, source1):
         self.source0 = source0
         self.source1 = source1
@@ -31,6 +35,10 @@ class Add(NoiseModule):
         return self.source0.get_value(x, y, z) + self.source1.get_value(x, y, z)
 
 class Billow(NoiseModule):
+    """ Noise function that is more suitable for items like clouds or rocks.
+    This module is nearly identical to Perlin noise, however each octave has
+    the absolute value taken from the signal.
+    """
     def __init__(self, frequency=1, lacunarity=2, quality=Quality.std,
         octaves=6, persistence=0.5, seed=0):
 
@@ -63,19 +71,24 @@ class Billow(NoiseModule):
         return value
 
 class Blend(NoiseModule):
-    def __init__(self):
-        self.sourceModules = [None] * 3
+    """ Blends source0 and source1 by performing a linear interpolation with
+    source2 acting as the alpha
+    """
+    def __init__(self, source0, source1, source2):
+        self.source0 = source0
+        self.source1 = source1
+        self.source2 = source2
 
     def get_value(self, x, y, z):
-        assert (self.sourceModules[0] is not None)
-        assert (self.sourceModules[1] is not None)
-        assert (self.sourceModules[2] is not None)
+        assert (self.source0 is not None)
+        assert (self.source1 is not None)
+        assert (self.source2 is not None)
 
-        v0 = self.sourceModules[0].get_value(x, y, z)
-        v1 = self.sourceModules[1].get_value(x, y, z)
-        alpha = (self.sourceModules[2].get_value(x, y, z) + 1) / 2
+        v0 = self.source0.get_value(x, y, z)
+        v1 = self.source1.get_value(x, y, z)
+        alpha = (self.source2.get_value(x, y, z) + 1) / 2
 
-        return linear_interp(v1, v1, alpha)
+        return linear_interp(v0, v1, alpha)
 
 class Checkerboard(NoiseModule):
     def get_value(self, x, y, z):
