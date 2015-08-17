@@ -226,6 +226,14 @@ class Displace(NoiseModule):
         return self.source3.get_value(xD, yD, zD)
 
 class Exponent(NoiseModule):
+    """  Sets the exponent value to apply to the output value from the
+    source module.
+
+    Because most noise modules will output values that range from -1.0
+    to +1.0, this noise module first normalizes this output value (the
+    range becomes 0.0 to 1.0), maps that value onto an exponential
+    curve, then rescales that value back to the original range.
+    """
     def __init__(self, source0, exponent=1):
         self.exponent = exponent
         self.source0 = source0
@@ -238,37 +246,42 @@ class Exponent(NoiseModule):
         return math.pow(abs((value + 1) / 2), self.exponent) * 2 - 1
 
 class Invert(NoiseModule):
-    def __init__(self):
-        self.sourceModules = [None] * 1
+    """ Inverts the sign of the given source. """
+    def __init__(self, source0):
+        self.source0 = source0
 
     def get_value(self, x, y, z):
-        assert(self.sourceModules[0] is not None)
+        assert(self.source0 is not None)
 
-        return -(self.sourceModules[0].get_value(x, y, z))
+        return -(self.source0.get_value(x, y, z))
 
 class Max(NoiseModule):
-    def __init__(self, ):
-        self.sourceModules = [None] * 2
+    """ Chooses the large value of source0 and source1. """
+    def __init__(self, source0, source1):
+        self.source0 = source0
+        self.source1 = source1
 
     def get_value(self, x, y, z):
-        assert(self.sourceModules[0] is not None)
-        assert(self.sourceModules[1] is not None)
+        assert(self.source0 is not None)
+        assert(self.source1 is not None)
 
-        v0 = self.sourceModules[0].get_value(x, y, z)
-        v1 = self.sourceModules[1].get_value(x, y, z)
+        v0 = self.source0.get_value(x, y, z)
+        v1 = self.source1.get_value(x, y, z)
 
         return max(v0, v1)
 
 class Min(NoiseModule):
-    def __init__(self):
-        self.sourceModules = [None] * 2
+    """ Chooses the lesser value of source0 and source1. """
+    def __init__(self, source0, source1):
+        self.source0 = source0
+        self.source1 = source1
 
     def get_value(self, x, y, z):
-        assert(self.sourceModules[0] is not None)
-        assert(self.sourceModules[1] is not None)
+        assert(self.source0 is not None)
+        assert(self.source1 is not None)
 
-        v0 = self.sourceModules[0].get_value(x, y, z)
-        v1 = self.sourceModules[1].get_value(x, y, z)
+        v0 = self.source0.get_value(x, y, z)
+        v1 = self.source1.get_value(x, y, z)
 
         return min(v0, v1)
 

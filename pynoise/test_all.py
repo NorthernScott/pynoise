@@ -89,3 +89,35 @@ def test_exponent():
     assert e0.get_value(0,0,0) == -1
     assert e1.get_value(0,0,0) == 0.125
     assert e2.get_value(0,0,0) == 1
+
+def test_invert():
+    c0 = Const(-1)
+    c1 = Const(1)
+
+    i0 = Invert(c0)
+    i1 = Invert(c1)
+
+    assert i0.get_value(0,0,0) == 1
+    assert i1.get_value(0,0,0) == -1
+
+def test_max():
+    c0 = Const(1)
+    c1 = Const(2)
+    c2 = Const(3)
+
+    m0 = Max(c0, c1)
+    m1 = Max(c2, c1)
+
+    assert m0.get_value(0,0,0) == 2
+    assert m1.get_value(0,0,0) == 3
+
+def test_min():
+    c0 = Const(1)
+    c1 = Const(2)
+    c2 = Const(3)
+
+    m0 = Min(c0, c1)
+    m1 = Min(c2, c1)
+
+    assert m0.get_value(0,0,0) == 1
+    assert m1.get_value(0,0,0) == 2
