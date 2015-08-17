@@ -341,6 +341,8 @@ class Power(NoiseModule):
         return self.source0.get_value(x,y,z)**self.source1.get_value(x,y,z)
 
 class RidgedMulti(NoiseModule):
+    """ This is much like perlin noise, however each octave is modified by
+    abs(x*-exponent) where x is x *= frequency repeated over each octave. """
     def __init__(self, frequency=1, lacunarity=2, quality=Quality.std,
         octaves=6, seed=0, exponent=1, offset=1, gain=2):
         self.frequency = frequency
@@ -355,7 +357,7 @@ class RidgedMulti(NoiseModule):
 
         freq = 1
         for i in range(0, max_octaves):
-            weights[i] = freq**-h
+            weights[i] = freq**-exponent
             freq *= self.lacunarity
 
     def get_value(self, x, y, z):
@@ -394,7 +396,11 @@ class RidgedMulti(NoiseModule):
         return (value * 1.25) - 1
 
 class RotatePoint(NoiseModule):
-    def __init__(self, xAngle=0, yAngle=0, zAngle=0):
+    """ Rotates source0 around the origin before returning a value. This is a
+    right hand system, xAngle increases to the right, yAngle increases upwards
+    and zAngle increases inward.
+    """
+    def __init__(self, source0, xAngle=0, yAngle=0, zAngle=0):
         xCos = math.cos(math.radians(xAngle))
         yCos = math.cos(math.radians(yAngle))
         zCos = math.cos(math.radians(zAngle))
@@ -415,16 +421,16 @@ class RotatePoint(NoiseModule):
         self.y3a = xSin
         self.z3a = yCos * xCos
 
-        self.sourceModules = [None]
+        self.source0 = source0
 
     def get_value(self, x, y, z):
-        assert (self.sourceModules[0] is not None)
+        assert (self.source0 is not None)
 
         nx = (self.x1a * x) + (self.y1a * y) + (self.z1a * z)
         ny = (self.x2a * x) + (self.y2a * y) + (self.z2a * z)
         nz = (self.x3a * x) + (self.y3a * y) + (self.z3a * z)
 
-        return self.sourceModules[0].get_value(nx, ny, nz)
+        return self.source0.get_value(nx, ny, nz)
 
 class ScaleBias(NoiseModule):
     def __init__(self, bias=0, scale=1):

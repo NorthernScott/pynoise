@@ -144,3 +144,13 @@ def test_power():
     assert p1.get_value(0,0,0) == 1
     assert p2.get_value(0,0,0) == 0.25
     assert p3.get_value(0,0,0) == 4
+
+def test_ridged():
+    r0 = RidgedMulti()
+    r0.get_value(0,0,0)
+
+def test_rotate():
+    c0 = Const(1)
+
+    r0 = RotatePoint(c0)
+    r0.get_value(0,0,0)
