@@ -121,3 +121,9 @@ def test_min():
 
     assert m0.get_value(0,0,0) == 1
     assert m1.get_value(0,0,0) == 2
+
+def test_multiply():
+    c0 = Const(2)
+
+    m0 = Multiply(c0, c0)
+    assert m0.get_value(0,0,0) == 4

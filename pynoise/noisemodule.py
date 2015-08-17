@@ -286,14 +286,15 @@ class Min(NoiseModule):
         return min(v0, v1)
 
 class Multiply(NoiseModule):
-    def __init__(self):
-        self.sourceModules = [None] * 2
+    def __init__(self, source0, source1):
+        self.source0 = source0
+        self.source1 = source1
 
     def get_value(self, x, y, z):
-        assert(self.sourceModules[0] is not None)
-        assert(self.sourceModules[1] is not None)
+        assert(self.source0 is not None)
+        assert(self.source1 is not None)
 
-        return self.sourceModules[0].get_value(x, y, z) * self.sourceModules[0].get_value(x, y, z)
+        return self.source0.get_value(x, y, z) * self.source1.get_value(x, y, z)
 
 class Perlin(NoiseModule):
     def __init__(self, frequency=1, lacunarity=2, octave=6, persistence=0.5, seed=0, quality=Quality.std):
