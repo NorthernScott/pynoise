@@ -154,3 +154,12 @@ def test_rotate():
 
     r0 = RotatePoint(c0)
     r0.get_value(0,0,0)
+
+def test_scalebias():
+    c0 = Const(2)
+
+    s0 = ScaleBias(c0, scale=2, bias=0.5)
+    s1 = ScaleBias(c0, bias=3)
+
+    assert s0.get_value(0,0,0) == 4.5
+    assert s1.get_value(0,0,0) == 5

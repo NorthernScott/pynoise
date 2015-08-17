@@ -434,16 +434,17 @@ class RotatePoint(NoiseModule):
         return self.source0.get_value(nx, ny, nz)
 
 class ScaleBias(NoiseModule):
-    def __init__(self, bias=0, scale=1):
+    """ Takes the value of source0 and multiplies by scale and adds by bias. """
+    def __init__(self, source0, bias=0, scale=1):
         self.bias = bias
         self.scale = scale
 
-        self.sourceModules = [None]
+        self.source0 = source0
 
     def get_value(self, x, y, z):
-        assert (self.sourceModules[0] is not None)
+        assert (self.source0 is not None)
 
-        return self.sourceModules[0].get_value(x, y, z) * self.scale + self.bias
+        return self.source0.get_value(x, y, z) * self.scale + self.bias
 
 class ScalePoint(NoiseModule):
     def __init__(self, sx=1, sy=1, sz=1):
