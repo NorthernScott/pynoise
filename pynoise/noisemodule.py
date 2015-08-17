@@ -351,13 +351,14 @@ class RidgedMulti(NoiseModule):
         self.octaves = octaves
         self.seed = seed
         self.exponent = exponent
+        self.max_octaves = 30
         self.weights = [0] * self.max_octaves
         self.offset = offset
         self.gain = gain
 
         freq = 1
-        for i in range(0, max_octaves):
-            weights[i] = freq**-exponent
+        for i in range(0, self.max_octaves):
+            self.weights[i] = freq**-exponent
             freq *= self.lacunarity
 
     def get_value(self, x, y, z):
@@ -389,9 +390,9 @@ class RidgedMulti(NoiseModule):
 
             value += (signal * self.weights[i])
 
-            x *= lacunarity
-            y *= lacunarity
-            z *= lacunarity
+            x *= self.lacunarity
+            y *= self.lacunarity
+            z *= self.lacunarity
 
         return (value * 1.25) - 1
 
@@ -407,7 +408,7 @@ class RotatePoint(NoiseModule):
 
         xSin = math.sin(math.radians(xAngle))
         ySin = math.sin(math.radians(yAngle))
-        zSin = math.sin(math.raidans(zAngle))
+        zSin = math.sin(math.radians(zAngle))
 
         self.x1a = ySin * xSin * zSin + yCos * zCos
         self.y1a = xCos * zSin
