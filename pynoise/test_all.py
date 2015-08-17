@@ -163,3 +163,20 @@ def test_scalebias():
 
     assert s0.get_value(0,0,0) == 4.5
     assert s1.get_value(0,0,0) == 5
+
+def test_scalepoint():
+    c0 = Const(2)
+
+    s0 = ScalePoint(c0)
+    s0.get_value(0,0,0)
+
+def test_select():
+    c0 = Const(0)
+    c1 = Const(1)
+    c3 = Const(0.5)
+    c4 = Const(-0.5)
+
+    s0 = Select(c0, c1, c3)
+    s1 = Select(c0, c1, c4, lower_bound=0)
+    assert s0.get_value(0,0,0) == 1
+    assert s1.get_value(0,0,0) == 0

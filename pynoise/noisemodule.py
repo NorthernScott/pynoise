@@ -447,47 +447,74 @@ class ScaleBias(NoiseModule):
         return self.source0.get_value(x, y, z) * self.scale + self.bias
 
 class ScalePoint(NoiseModule):
-    def __init__(self, sx=1, sy=1, sz=1):
+    """ Scales the x,y,z before returning source0 value. """
+    def __init__(self, source0, sx=1, sy=1, sz=1):
         self.sx = sx
         self.sy = sy
         self.sz = sz
 
-        self.sourceModules = [None]
+        self.source0 = source0
 
     def get_value(self, x, y, z):
-        assert (self.sourceModules[0] is not None)
+        assert (self.source0 is not None)
 
-        return self.sourceModules[0].get_value(x * xs, y * ys, z * zs)
+        return self.source0.get_value(x * self.sx, y * self.sy, z * self.sz)
 
 class Select(NoiseModule):
-    def __init__(self, edge_falloff=0, lower_bound=-1, upper_bound=1):
+    """
+    /// Noise module that outputs the value selected from one of two source
+    /// modules chosen by the output value from a control module.
+    ///
+    /// Unlike most other noise modules, the index value assigned to a source
+    /// module determines its role in the selection operation:
+    /// - Source module 0 (upper left in the diagram) outputs a value.
+    /// - Source module 1 (lower left in the diagram) outputs a value.
+    /// - Source module 2 (bottom of the diagram) is known as the <i>control
+    ///   module</i>.  The control module determines the value to select.  If
+    ///   the output value from the control module is within a range of values
+    ///   known as the <i>selection range</i>, this noise module outputs the
+    ///   value from the source module with an index value of 1.  Otherwise,
+    ///   this noise module outputs the value from the source module with an
+    ///   index value of 0.
+    ///
+    ///
+    /// By default, there is an abrupt transition between the output values
+    /// from the two source modules at the selection-range boundary.  To
+    /// smooth the transition, pass a non-zero value to edge_falloff
+    /// method.  Higher values result in a smoother transition.
+    ///
+    /// This noise module requires three source modules.
+    """
+    def __init__(self, source0, source1, source2, edge_falloff=0, lower_bound=-1, upper_bound=1):
         self.edge_falloff = edge_falloff
         self.lower_bound = lower_bound
         self.upper_bound = upper_bound
 
-        self.sourceModules = [None] * 3
+        self.source0 = source0
+        self.source1 = source1
+        self.source2 = source2
 
     def get_value(self, x, y, z):
-        assert (self.sourceModules[0] is not None)
-        assert (self.sourceModules[1] is not None)
-        assert (self.sourceModules[2] is not None)
+        assert (self.source0 is not None)
+        assert (self.source1 is not None)
+        assert (self.source2 is not None)
 
-        control_value = self.sourceModules[2].get_value(x, y, z)
+        control_value = self.source2.get_value(x, y, z)
 
         if self.edge_falloff > 0:
             if control_value < (self.lower_bound - self.edge_falloff):
-                return s.sourceModules[0].get_value(x,y,z)
+                return s.source0.get_value(x,y,z)
 
             elif control_value < (self.lower_bound + self.edge_falloff):
                 lower_curve = (self.lower_bound - self.edge_falloff)
                 upper_curve = (self.lower_bound + self.edge_falloff)
                 alpha = scurve3((control_value - lower_curve) / upper_curve - lower_curve)
 
-                return linear_interp(self.sourceModules[0].get_value(x, y, z),
-                    self.sourceModules[1].get_value(x, y, z), alpha)
+                return linear_interp(self.source0.get_value(x, y, z),
+                    self.source1.get_value(x, y, z), alpha)
 
             elif control_value < (self.upper_bound - self.edge_falloff):
-                return s.sourceModules[1].get_value(x, y, z)
+                return s.source1.get_value(x, y, z)
 
             elif control_value < (self.upper_bound + self.edge_falloff):
                 lower_curve = (self.upper_bound - self.edge_falloff)
@@ -495,22 +522,14 @@ class Select(NoiseModule):
                 alpha = scurve3((control_value - lower_curve) / upper_curve - lower_curve)
 
                 return linear_interp(self.sourceModules[1].get_value(x, y, z),
-                    self.sourceModules[0].get_value(x, y, z), alpha)
+                    self.source0.get_value(x, y, z), alpha)
             else:
-                return self.sourceModules[0].get_value(x, y, z)
+                return self.source0.get_value(x, y, z)
         else:
             if control_value < self.lower_bound or control_value > self.upper_bound:
-                return self.sourceModules[0].get_value(x, y, z)
+                return self.source0.get_value(x, y, z)
             else:
-                return self.sourceModules[1].get_value(x, y, z)
-
-    def set_edge_falloff(self, falloff):
-        bound = self.upper_bound - self.lower_bound
-
-        if falloff > (bound/2):
-            self.edge_falloff = bound/2
-        else:
-            self.edge_falloff = falloff
+                return self.source1.get_value(x, y, z)
 
 class Spheres(NoiseModule):
     def __init__(self, frequency=1):
