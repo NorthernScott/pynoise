@@ -76,3 +76,16 @@ def test_displace():
     displace = Displace(c0, c0, c0, b1)
 
     assert b1.get_value(0,0,0) == displace.get_value(0,0,0)
+
+def test_exponent():
+    c0 = Const(-1)
+    c1 = Const(0.5)
+    c2 = Const(1)
+
+    e0 = Exponent(c0, exponent=2)
+    e1 = Exponent(c1, exponent=2)
+    e2 = Exponent(c2, exponent=2)
+
+    assert e0.get_value(0,0,0) == -1
+    assert e1.get_value(0,0,0) == 0.125
+    assert e2.get_value(0,0,0) == 1

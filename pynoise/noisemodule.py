@@ -226,16 +226,16 @@ class Displace(NoiseModule):
         return self.source3.get_value(xD, yD, zD)
 
 class Exponent(NoiseModule):
-    def __init__(self, exponent=1):
+    def __init__(self, source0, exponent=1):
         self.exponent = exponent
-        self.sourceModules = [None] * 1
+        self.source0 = source0
 
     def get_value(self, x, y, z):
-        assert (self.sourceModules[0] is not None)
+        assert (self.source0 is not None)
 
-        value = self.sourceModules[0].get_value(x, y, z)
+        value = self.source0.get_value(x, y, z)
 
-        return (abs((value + 1) / 2)**self.exponent)* 2 - 1
+        return math.pow(abs((value + 1) / 2), self.exponent) * 2 - 1
 
 class Invert(NoiseModule):
     def __init__(self):
@@ -552,7 +552,7 @@ class TranlatePoint(NoiseModule):
 
         return self.sourceModules[0].get_value(x+xtran, y+ytran, z+ztran)
 
-def Turbulence(NoiseModule):
+class Turbulence(NoiseModule):
     def __init__(self, frequency=1, power=1, roughness=3, seed=0):
         self.frequency = frequency
         self.power = power
