@@ -286,6 +286,7 @@ class Min(NoiseModule):
         return min(v0, v1)
 
 class Multiply(NoiseModule):
+    """ Multiplies source0 by source1. """
     def __init__(self, source0, source1):
         self.source0 = source0
         self.source1 = source1
@@ -297,6 +298,7 @@ class Multiply(NoiseModule):
         return self.source0.get_value(x, y, z) * self.source1.get_value(x, y, z)
 
 class Perlin(NoiseModule):
+    """ The classic noise. https://en.wikipedia.org/wiki/Perlin_noise """
     def __init__(self, frequency=1, lacunarity=2, octave=6, persistence=0.5, seed=0, quality=Quality.std):
         self.frequency = frequency
         self.lacunarity = lacunarity
@@ -327,14 +329,16 @@ class Perlin(NoiseModule):
         return value
 
 class Power(NoiseModule):
-    def __init__(self):
-        self.sourceModules = [None] * 2
+    """ source0 ** source1. Does not apply scaling. """
+    def __init__(self, source0, source1):
+        self.source0 = source0
+        self.source1 = source1
 
     def get_value(self, x, y, z):
-        assert (self.sourceModules[0] is not None)
-        assert (self.sourceModules[1] is not None)
+        assert (self.source0 is not None)
+        assert (self.source1 is not None)
 
-        return self.sourceModules[0].get_value(x,y,z)**self.sourceModules[1].get_value(x,y,z)
+        return self.source0.get_value(x,y,z)**self.source1.get_value(x,y,z)
 
 class RidgedMulti(NoiseModule):
     def __init__(self, frequency=1, lacunarity=2, quality=Quality.std,

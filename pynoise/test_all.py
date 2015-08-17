@@ -127,3 +127,20 @@ def test_multiply():
 
     m0 = Multiply(c0, c0)
     assert m0.get_value(0,0,0) == 4
+
+def test_perlin():
+    perlin = Perlin()
+    perlin.get_value(0,0,0)
+
+def test_power():
+    c0 = Const(-1)
+    c1 = Const(0.5)
+    c2 = Const(2)
+
+    p1 = Power(c0, c2)
+    p2 = Power(c1, c2)
+    p3 = Power(c2, c2)
+
+    assert p1.get_value(0,0,0) == 1
+    assert p2.get_value(0,0,0) == 0.25
+    assert p3.get_value(0,0,0) == 4
