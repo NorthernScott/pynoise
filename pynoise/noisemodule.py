@@ -532,6 +532,7 @@ class Select(NoiseModule):
                 return self.source1.get_value(x, y, z)
 
 class Spheres(NoiseModule):
+    """ Generates a series of concentric spheres centered around 0,0,0. """
     def __init__(self, frequency=1):
         self.frequency = frequency
 
@@ -547,19 +548,51 @@ class Spheres(NoiseModule):
         return 1 - (nearest*4)
 
 class Terrace(NoiseModule):
-    def __init__(self, invert_terraces=False):
+    """
+    Noise module that maps the output value from a source module onto a
+    terrace-forming curve.
+
+    This noise module maps the output value from the source module onto a
+    terrace-forming curve.  The start of this curve has a slope of zero;
+    its slope then smoothly increases.  This curve also contains
+    **control points** which resets the slope to zero at that point,
+    producing a "terracing" effect.
+
+    To add a control point to this noise module, call the
+    add_control_point() method.
+
+    An application must add a minimum of two control points to the curve.
+    If this is not done, the get_value() method fails.  The control points
+    can have any value, although no two control points can have the same
+    value.  There is no limit to the number of control points that can be
+    added to the curve.
+
+    This noise module clamps the output value from the source module if
+    that value is less than the value of the lowest control point or
+    greater than the value of the highest control point.
+
+    This noise module is often used to generate terrain features such as
+    your stereotypical desert canyon.
+
+    This noise module requires one source module.
+    """
+    def __init__(self, source0, control_points=None, invert_terraces=False):
         self.control_points = SortedList()
         self.invert_terraces = invert_terraces
-        self.sourceModules = [None]
+        self.source0 = source0
+
+        if control_points is not None:
+            for c in control_points:
+                self.add_control_point(c)
 
     def add_control_point(self, value):
         self.control_points.append(value)
 
     def get_value(self, x, y, z):
-        assert (self.sourceModules[0] is not None)
+        assert (self.source0 is not None)
         assert (len(self.control_points) > 1)
 
-        value = self.sourceModules[0].get_value(x, y, z)
+        value = self.source0.get_value(x, y, z)
 
         for i, cp in enumerate(self.control_points):
             if value < cp:

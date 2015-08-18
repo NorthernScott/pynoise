@@ -180,3 +180,14 @@ def test_select():
     s1 = Select(c0, c1, c4, lower_bound=0)
     assert s0.get_value(0,0,0) == 1
     assert s1.get_value(0,0,0) == 0
+
+def test_spheres():
+    s0 = Spheres()
+    s1 = Spheres(frequency=10)
+    assert s0.get_value(0,0,0) == s1.get_value(0,0,0)
+
+def test_terrace():
+    c0 = Const(0)
+
+    t0 = Terrace(c0, control_points=[-1,-0.5, 0, 0.5, 1])
+    t0.get_value(0,0,0)
