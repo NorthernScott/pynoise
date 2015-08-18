@@ -329,7 +329,7 @@ class Perlin(NoiseModule):
         return value
 
 class Power(NoiseModule):
-    """ source0 ** source1. Does not apply scaling. """
+    """ source0 ^ source1. Does not apply scaling. """
     def __init__(self, source0, source1):
         self.source0 = source0
         self.source1 = source1
@@ -462,28 +462,25 @@ class ScalePoint(NoiseModule):
 
 class Select(NoiseModule):
     """
-    /// Noise module that outputs the value selected from one of two source
-    /// modules chosen by the output value from a control module.
-    ///
-    /// Unlike most other noise modules, the index value assigned to a source
-    /// module determines its role in the selection operation:
-    /// - Source module 0 (upper left in the diagram) outputs a value.
-    /// - Source module 1 (lower left in the diagram) outputs a value.
-    /// - Source module 2 (bottom of the diagram) is known as the <i>control
-    ///   module</i>.  The control module determines the value to select.  If
-    ///   the output value from the control module is within a range of values
-    ///   known as the <i>selection range</i>, this noise module outputs the
-    ///   value from the source module with an index value of 1.  Otherwise,
-    ///   this noise module outputs the value from the source module with an
-    ///   index value of 0.
-    ///
-    ///
-    /// By default, there is an abrupt transition between the output values
-    /// from the two source modules at the selection-range boundary.  To
-    /// smooth the transition, pass a non-zero value to edge_falloff
-    /// method.  Higher values result in a smoother transition.
-    ///
-    /// This noise module requires three source modules.
+    Noise module that outputs the value selected from one of two source
+    modules chosen by the output value from a control module.
+
+    Unlike most other noise modules, the index value assigned to a source
+    module determines its role in the selection operation:
+    - source0 outputs a value.
+    - source1 outputs a value.
+    - source2 is known as the **control module**.  The control module
+      determines the value to select.  If the output value from the control
+      module is within a range of values known as the **selection range**,
+      this noise module outputs the value from source1.  Otherwise,
+      this noise module outputs the value from source0.
+
+    By default, there is an abrupt transition between the output values
+    from the two source modules at the selection-range boundary.  To
+    smooth the transition, pass a non-zero value to edge_falloff
+    method.  Higher values result in a smoother transition.
+
+    This noise module requires three source modules.
     """
     def __init__(self, source0, source1, source2, edge_falloff=0, lower_bound=-1, upper_bound=1):
         self.edge_falloff = edge_falloff
