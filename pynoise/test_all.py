@@ -191,3 +191,17 @@ def test_terrace():
 
     t0 = Terrace(c0, control_points=[-1,-0.5, 0, 0.5, 1])
     t0.get_value(0,0,0)
+
+def test_translatepoint():
+    c0 = Const(.1)
+    tp = TranslatePoint(c0)
+    tp.get_value(0,0,0)
+
+def test_turbulence():
+    c0 = Const(1)
+    t0 = Turbulence(c0)
+    t0.get_value(0,0,0)
+
+def test_voronoi():
+    v = Voronoi()
+    v.get_value(0,0,0)

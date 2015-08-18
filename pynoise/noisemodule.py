@@ -1,7 +1,7 @@
 import math
 
 from pynoise.quality import Quality
-from pynoise.noise import gradient_coherent_noise_3d
+from pynoise.noise import gradient_coherent_noise_3d, value_noise_3d
 from pynoise.interpolators import linear_interp, cubic_interp
 from pynoise.util import clamp
 
@@ -615,29 +615,89 @@ class Terrace(NoiseModule):
 
         return linear_interp(value0, value1, alpha)
 
-class TranlatePoint(NoiseModule):
-    def __init__(self, xtran, ytran, ztran):
+class TranslatePoint(NoiseModule):
+    """ Translates the coordinates (x,y,z) of the input value
+    (x+xtran, y+ytran, z+ztran) before returning any output.
+    """
+    def __init__(self, source0, xtran=0, ytran=0, ztran=0):
         self.xtran = xtran
         self.ytran = ytran
         self.ztran = ztran
-        self.sourceModules = [None]
+        self.source0 = source0
 
     def get_value(self, x, y, z):
-        assert (self.sourceModules[0] is not None)
+        assert (self.source0 is not None)
 
-        return self.sourceModules[0].get_value(x+xtran, y+ytran, z+ztran)
+        return self.source0.get_value(x+self.xtran, y+self.ytran, z+self.ztran)
 
 class Turbulence(NoiseModule):
-    def __init__(self, frequency=1, power=1, roughness=3, seed=0):
+    """
+    Noise module that randomly displaces the input value before
+    returning the output value from a source module.
+
+    The get_value() method randomly displaces the (x, y, z)
+    coordinates of the input value before retrieving the output value from
+    the source0.  To control the turbulence, an application can
+    modify its frequency, its power, and its roughness.
+
+    The frequency of the turbulence determines how rapidly the
+    displacement amount changes.  To specify the frequency, set the frequency
+    parameter.
+
+    The power of the turbulence determines the scaling factor that is
+    applied to the displacement amount.  To specify the power, set the power
+    parameter.
+
+    The roughness of the turbulence determines the roughness of the
+    changes to the displacement amount.  Low values smoothly change the
+    displacement amount.  High values roughly change the displacement
+    amount, which produces more "kinky" changes.  To specify the
+    roughness, set the roughness parameter.
+
+    Use of this noise module may require some trial and error.  Assuming
+    that you are using a generator module as the source module, you
+    should first:
+     - Set the frequency to the same frequency as the source module.
+     - Set the power to the reciprocal of the frequency.
+
+    From these initial frequency and power values, modify these values
+    until this noise module produce the desired changes in your terrain or
+    texture.  For example:
+    - Low frequency (1/8 initial frequency) and low power (1/8 initial
+      power) produces very minor, almost unnoticeable changes.
+    - Low frequency (1/8 initial frequency) and high power (8 times
+      initial power) produces "ropey" lava-like terrain or marble-like
+      textures.
+    - High frequency (8 times initial frequency) and low power (1/8
+      initial power) produces a noisy version of the initial terrain or
+      texture.
+    - High frequency (8 times initial frequency) and high power (8 times
+      initial power) produces nearly pure noise, which isn't entirely
+      useful.
+
+    Displacing the input values result in more realistic terrain and
+    textures.  If you are generating elevations for terrain height maps,
+    you can use this noise module to produce more realistic mountain
+    ranges or terrain features that look like flowing lava rock.  If you
+    are generating values for textures, you can use this noise module to
+    produce realistic marble-like or "oily" textures.
+
+    Internally, there are three Perlin noise modules
+    that displace the input value; one for the x, one for the y,
+    and one for the z coordinate.
+
+    This noise module requires one source module.
+    """
+    def __init__(self, source0, frequency=1, power=1, roughness=3, seed=0):
         self.frequency = frequency
         self.power = power
         self.roughness = roughness
         self.seed = seed
-        self.xdm = Perlin(frequency=frequency, octaves=roughness, seed=seed)
-        self.ydm = Perlin(frequency=frequency, octaves=roughness, seed=seed)
-        self.zdm = Perlin(frequency=frequency, octaves=roughness, seed=seed)
+        self.xdm = Perlin(frequency=frequency, octave=roughness, seed=seed)
+        self.ydm = Perlin(frequency=frequency, octave=roughness, seed=seed)
+        self.zdm = Perlin(frequency=frequency, octave=roughness, seed=seed)
 
-        self.sourceModules = [None]
+        self.source0 = source0
 
     def get_value(self, x, y, z):
           x0 = x + (12414.0 / 65536.0)
@@ -650,13 +710,48 @@ class Turbulence(NoiseModule):
           y2 = y + (11213.0 / 65536.0)
           z2 = z + (44845.0 / 65536.0)
 
-          xDistort = x + (xdm.get_value(x0, y0, z0) * self.power)
-          yDistort = y + (xdm.get_value(x1, y1, z1) * self.power)
-          zDistort = z + (xdm.get_value(x2, y2, z2) * self.power)
+          xDistort = x + (self.xdm.get_value(x0, y0, z0) * self.power)
+          yDistort = y + (self.ydm.get_value(x1, y1, z1) * self.power)
+          zDistort = z + (self.zdm.get_value(x2, y2, z2) * self.power)
 
-          return self.sourceModules[0].get_value(xDistort, yDistort, zDistort)
+          return self.source0.get_value(xDistort, yDistort, zDistort)
 
 class Voronoi(NoiseModule):
+    """
+    Noise module that outputs Voronoi cells.
+
+    In mathematics, a **Voronoi cell** is a region containing all the
+    points that are closer to a specific **seed point** than to any
+    other seed point.  These cells mesh with one another, producing
+    polygon-like formations.
+
+    By default, this noise module randomly places a seed point within
+    each unit cube.  By modifying the **frequency** of the seed points,
+    an application can change the distance between seed points.  The
+    higher the frequency, the closer together this noise module places
+    the seed points, which reduces the size of the cells.  To specify the
+    frequency of the cells, set the frequency parameter.
+
+    This noise module assigns each Voronoi cell with a random constant
+    value from a coherent-noise function.  The **displacement value**
+    controls the range of random values to assign to each cell.  The
+    range of random values is +/- the displacement value.  To specify the
+    displacement value, set the displacement parameter.
+
+    To modify the random positions of the seed points, set the seed parameter
+    to something different.
+
+    This noise module can optionally add the distance from the nearest
+    seed to the output value.  To enable this feature, set enable_distance
+    to True. This causes the points in the Voronoi cells
+    to increase in value the further away that point is from the nearest
+    seed point.
+
+    Voronoi cells are often used to generate cracked-mud terrain
+    formations or crystal-like textures
+
+    This noise module requires no source modules.
+    """
     def __init__(self, displacement=1, enable_distance=False, frequency=1, seed=0):
         self.displacement = displacement
         self.enable_distance = enable_distance
@@ -696,7 +791,7 @@ class Voronoi(NoiseModule):
                         zCan = zPos
         value = 0
 
-        if enable_distance:
+        if self.enable_distance:
             xDist = xCan - x
             yDist = yCan - y
             zDist = zCan - z
