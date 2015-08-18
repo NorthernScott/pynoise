@@ -3,7 +3,7 @@ from distutils.core import setup
 setup(
     name = 'pynoise',
     packages = ['pynoise'],
-    version = '1.0',
+    version = '1.1',
     description = 'An implementation of libnoise in python.',
     author = 'Tim Butram',
     author_email = 'tim@timchi.me',
