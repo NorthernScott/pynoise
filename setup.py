@@ -3,8 +3,8 @@ from distutils.core import setup
 setup(
     name = 'pynoise',
     packages = ['pynoise'],
-    version = '1.1',
-    description = 'An implementation of libnoise in python.',
+    version = '1.1.1',
+    description = 'An implementation of libnoise in python. Allows the creation of verious noise maps using a series of interconnected noise modules.',
     author = 'Tim Butram',
     author_email = 'tim@timchi.me',
     url = 'https://gitlab.com/atrus6/pynoise',

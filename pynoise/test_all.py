@@ -205,3 +205,8 @@ def test_turbulence():
 def test_voronoi():
     v = Voronoi()
     v.get_value(0,0,0)
+
+def test_util_clamp():
+    assert clamp(1,0,2) == 1
+    assert clamp(0,1,2) == 1
+    assert clamp(2,0,1) == 1

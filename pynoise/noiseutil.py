@@ -3,8 +3,8 @@ from colormath.color_objects import sRGBColor, LabColor
 from colormath.color_conversions import convert_color
 import numpy as np
 from PIL import Image, ImageColor
-from util import clamp
-from interpolators import linear_interp
+from pynoise.util import clamp
+from pynoise.interpolators import linear_interp
 import math
 
 def linear_interp_color(color0, color1, alpha):

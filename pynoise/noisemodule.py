@@ -1,3 +1,10 @@
+"""
+.. module:: noisemodule
+   :synopsis: Various interlinkable noise modules.
+
+ .. moduleauthor:: Tim Butram
+"""
+
 import math
 
 from pynoise.quality import Quality
@@ -13,7 +20,13 @@ class NoiseModule():
         raise NotImplementedError('Not Implemented.')
 
 class Abs(NoiseModule):
-    """ Returns the absolute value of the given source module. """
+    """
+    Returns the absolute value of the given source module.
+
+    :param source0: The module that Abs will apply to.
+    :type source0: NoiseModule
+    
+    """
     def __init__(self, source0):
         self.source0 = source0
 
