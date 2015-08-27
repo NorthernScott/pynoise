@@ -1,4 +1,11 @@
 from pynoise.noisemodule import *
+import pytest
+
+def test_noise_module():
+    n = NoiseModule()
+
+    with pytest.raises(NotImplementedError):
+        n.get_value(0,0,0)
 
 def test_const():
     const = Const(1)
@@ -39,6 +46,8 @@ def test_blend():
 
 def test_checkerboard():
     checkerboard = Checkerboard()
+    checkerboard.get_value(0,0,0)
+    checkerboard.get_value(1.51,1.51,1.51)
 
 def test_clamp():
     const0 = Const(0.75)
@@ -62,7 +71,22 @@ def test_curve():
     curve1.add_control_point(0.2, 0.3)
     curve1.add_control_point(0.3, 0.4)
     curve1.add_control_point(0.4, 0.5)
-    curve.get_value(0,0,0)
+    curve1.get_value(0,0,0)
+
+    curve1.clear_control_points()
+    curve1.add_control_point(0.1, 0.2)
+    curve1.add_control_point(0.2, 0.3)
+    curve1.add_control_point(0.3, 0.4)
+    curve1.add_control_point(0.4, 0.5)
+    curve1.get_value(0,0,0)
+
+    const1 = Const(0)
+    curve2 = Curve(const1)
+    curve2.add_control_point(0.1, 0.2)
+    curve2.add_control_point(0.2, 0.3)
+    curve2.add_control_point(0.3, 0.4)
+    curve2.add_control_point(0.4, 0.5)
+    curve2.get_value(0,0,0)
 
 def test_cylinders():
     cylinders = Cylinders()
@@ -149,6 +173,12 @@ def test_ridged():
     r0 = RidgedMulti()
     r0.get_value(0,0,0)
 
+    r1 = RidgedMulti(gain=100, octaves=30)
+    r1.get_value(0,0,0)
+
+    r2 = RidgedMulti(gain=-100, octaves=30)
+    r2.get_value(0,0,0)
+
 def test_rotate():
     c0 = Const(1)
 
@@ -181,6 +211,22 @@ def test_select():
     assert s0.get_value(0,0,0) == 1
     assert s1.get_value(0,0,0) == 0
 
+    s2 = Select(c0,c1,c3, edge_falloff=0.5)
+    s2.get_value(0,0,0)
+
+    s3 = Select(c0,c1,c4, edge_falloff=0.5)
+    s3.get_value(0,0,0)
+
+    s4 = Select(c0,c1,c4, edge_falloff=0.5, lower_bound=0.9)
+    s4.get_value(0,0,0)
+
+    s5 = Select(c0,c1,c3, edge_falloff=0.5, lower_bound=0.9)
+    s5.get_value(0,0,0)
+
+    c5 = Const(10)
+    s6 = Select(c0,c1,c5, edge_falloff=0.5)
+    s6.get_value(0,0,0)
+
 def test_spheres():
     s0 = Spheres()
     s1 = Spheres(frequency=10)
@@ -191,6 +237,12 @@ def test_terrace():
 
     t0 = Terrace(c0, control_points=[-1,-0.5, 0, 0.5, 1])
     t0.get_value(0,0,0)
+
+    t1 = Terrace(c0, control_points=[1, 2])
+    t1.get_value(0,0,0)
+
+    t2 = Terrace(c0, control_points=[-1,-0.5, 0, 0.5, 1], invert_terraces=True)
+    t2.get_value(0,0,0)
 
 def test_translatepoint():
     c0 = Const(.1)
@@ -205,6 +257,9 @@ def test_turbulence():
 def test_voronoi():
     v = Voronoi()
     v.get_value(0,0,0)
+
+    v1 = Voronoi(enable_distance=True)
+    v1.get_value(0,0,0)
 
 def test_util_clamp():
     assert clamp(1,0,2) == 1

@@ -9,7 +9,7 @@ import math
 
 from pynoise.quality import Quality
 from pynoise.noise import gradient_coherent_noise_3d, value_noise_3d
-from pynoise.interpolators import linear_interp, cubic_interp
+from pynoise.interpolators import linear_interp, cubic_interp, scurve3, scurve5
 from pynoise.util import clamp
 
 from sortedcontainers import SortedDict, SortedList
@@ -25,7 +25,7 @@ class Abs(NoiseModule):
 
     :param source0: The module that Abs will apply to.
     :type source0: NoiseModule
-    
+
     """
     def __init__(self, source0):
         self.source0 = source0
@@ -312,10 +312,10 @@ class Multiply(NoiseModule):
 
 class Perlin(NoiseModule):
     """ The classic noise. https://en.wikipedia.org/wiki/Perlin_noise """
-    def __init__(self, frequency=1, lacunarity=2, octave=6, persistence=0.5, seed=0, quality=Quality.std):
+    def __init__(self, frequency=1, lacunarity=2, octaves=6, persistence=0.5, seed=0, quality=Quality.std):
         self.frequency = frequency
         self.lacunarity = lacunarity
-        self.octaves = octave
+        self.octaves = octaves
         self.seed = seed
         self.persistence = persistence
         self.quality = quality
@@ -388,7 +388,7 @@ class RidgedMulti(NoiseModule):
             signal = gradient_coherent_noise_3d(x, y, z, seed, self.quality)
 
             signal = abs(signal)
-            signal = self.offset = signal
+            signal = self.offset + signal
 
             signal *= signal
 
@@ -513,7 +513,7 @@ class Select(NoiseModule):
 
         if self.edge_falloff > 0:
             if control_value < (self.lower_bound - self.edge_falloff):
-                return s.source0.get_value(x,y,z)
+                return self.source0.get_value(x,y,z)
 
             elif control_value < (self.lower_bound + self.edge_falloff):
                 lower_curve = (self.lower_bound - self.edge_falloff)
@@ -524,14 +524,14 @@ class Select(NoiseModule):
                     self.source1.get_value(x, y, z), alpha)
 
             elif control_value < (self.upper_bound - self.edge_falloff):
-                return s.source1.get_value(x, y, z)
+                return self.source1.get_value(x, y, z)
 
             elif control_value < (self.upper_bound + self.edge_falloff):
                 lower_curve = (self.upper_bound - self.edge_falloff)
                 upper_curve = (self.upper_bound + self.edge_falloff)
                 alpha = scurve3((control_value - lower_curve) / upper_curve - lower_curve)
 
-                return linear_interp(self.sourceModules[1].get_value(x, y, z),
+                return linear_interp(self.source1.get_value(x, y, z),
                     self.source0.get_value(x, y, z), alpha)
             else:
                 return self.source0.get_value(x, y, z)
@@ -706,9 +706,9 @@ class Turbulence(NoiseModule):
         self.power = power
         self.roughness = roughness
         self.seed = seed
-        self.xdm = Perlin(frequency=frequency, octave=roughness, seed=seed)
-        self.ydm = Perlin(frequency=frequency, octave=roughness, seed=seed)
-        self.zdm = Perlin(frequency=frequency, octave=roughness, seed=seed)
+        self.xdm = Perlin(frequency=frequency, octaves=roughness, seed=seed)
+        self.ydm = Perlin(frequency=frequency, octaves=roughness, seed=seed)
+        self.zdm = Perlin(frequency=frequency, octaves=roughness, seed=seed)
 
         self.source0 = source0
 
