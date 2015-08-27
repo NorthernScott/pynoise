@@ -265,3 +265,15 @@ def test_util_clamp():
     assert clamp(1,0,2) == 1
     assert clamp(0,1,2) == 1
     assert clamp(2,0,1) == 1
+
+def test_linear_interp():
+    assert abs(linear_interp(0, 1, 0.5) - 0.5) <= 0.000001
+    assert abs(linear_interp(0, 1, 0.1) - 0.1) <= 0.000001
+    assert abs(linear_interp(0, 1, 0.25) - 0.25) <= 0.000001
+    assert abs(linear_interp(0, 1, 0.63) - 0.63) <= 0.000001
+
+    assert abs(linear_interp(0.1, 1, 0.31) - 0.379) <= 0.000001
+    assert abs(linear_interp(0.2, 1, 0.46) - 0.568) <= 0.000001
+    assert abs(linear_interp(0.3, 1, 0.19) - 0.433) <= 0.000001
+    assert abs(linear_interp(0.4, 1, 0.29) - 0.574) <= 0.000001
+    assert abs(linear_interp(0.5, 1, 0.15) - 0.575) <= 0.000001

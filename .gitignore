@@ -10,3 +10,4 @@ conf.py
 dist/
 .coverage
 doc/build/
+*.png

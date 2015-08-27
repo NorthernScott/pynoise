@@ -401,7 +401,7 @@ class RidgedMulti(NoiseModule):
             signal = gradient_coherent_noise_3d(x, y, z, seed, self.quality)
 
             signal = abs(signal)
-            signal = self.offset + signal
+            signal = self.offset - signal
 
             signal *= signal
 
