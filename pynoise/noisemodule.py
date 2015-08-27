@@ -14,6 +14,8 @@ from pynoise.util import clamp
 
 from sortedcontainers import SortedDict, SortedList
 
+from functools import lru_cache
+
 
 class NoiseModule():
     def get_value(self, x, y, z):
@@ -62,6 +64,7 @@ class Billow(NoiseModule):
         self.persistence = persistence
         self.seed = seed
 
+    @lru_cache(maxsize=32)
     def get_value(self, x, y, z):
         value = 0
         signal = 0
@@ -92,6 +95,7 @@ class Blend(NoiseModule):
         self.source1 = source1
         self.source2 = source2
 
+    @lru_cache(maxsize=32)
     def get_value(self, x, y, z):
         assert (self.source0 is not None)
         assert (self.source1 is not None)
@@ -104,6 +108,7 @@ class Blend(NoiseModule):
         return linear_interp(v0, v1, alpha)
 
 class Checkerboard(NoiseModule):
+    @lru_cache(maxsize=32)
     def get_value(self, x, y, z):
         ix = int(math.floor(x))
         iy = int(math.floor(y))
@@ -164,6 +169,7 @@ class Curve(NoiseModule):
     def clear_control_points(self):
         self.control_points = SortedDict()
 
+    @lru_cache(maxsize=32)
     def get_value(self, x, y, z):
         assert(self.source0 is not None)
         assert(len(self.control_points.keys()) >= 4)
@@ -204,6 +210,7 @@ class Cylinders(NoiseModule):
     def __init__(self, frequency=1):
         self.frequency = frequency
 
+    @lru_cache(maxsize=32)
     def get_value(self, x, y, z):
         x *= self.frequency
         z *= self.frequency
@@ -226,6 +233,7 @@ class Displace(NoiseModule):
         self.source2 = source2
         self.source3 = source3
 
+    @lru_cache(maxsize=32)
     def get_value(self, x, y, z):
         assert(self.source0 is not None)
         assert(self.source1 is not None)
@@ -251,6 +259,7 @@ class Exponent(NoiseModule):
         self.exponent = exponent
         self.source0 = source0
 
+    @lru_cache(maxsize=32)
     def get_value(self, x, y, z):
         assert (self.source0 is not None)
 
@@ -304,6 +313,7 @@ class Multiply(NoiseModule):
         self.source0 = source0
         self.source1 = source1
 
+    @lru_cache(maxsize=32)
     def get_value(self, x, y, z):
         assert(self.source0 is not None)
         assert(self.source1 is not None)
@@ -320,6 +330,7 @@ class Perlin(NoiseModule):
         self.persistence = persistence
         self.quality = quality
 
+    @lru_cache(maxsize=32)
     def get_value(self, x, y, z):
         value = 0.0
         signal = 0.0
@@ -347,6 +358,7 @@ class Power(NoiseModule):
         self.source0 = source0
         self.source1 = source1
 
+    @lru_cache(maxsize=32)
     def get_value(self, x, y, z):
         assert (self.source0 is not None)
         assert (self.source1 is not None)
@@ -374,6 +386,7 @@ class RidgedMulti(NoiseModule):
             self.weights[i] = freq**-exponent
             freq *= self.lacunarity
 
+    @lru_cache(maxsize=32)
     def get_value(self, x, y, z):
         x *= self.frequency
         y *= self.frequency
@@ -437,6 +450,7 @@ class RotatePoint(NoiseModule):
 
         self.source0 = source0
 
+    @lru_cache(maxsize=32)
     def get_value(self, x, y, z):
         assert (self.source0 is not None)
 
@@ -504,6 +518,7 @@ class Select(NoiseModule):
         self.source1 = source1
         self.source2 = source2
 
+    @lru_cache(maxsize=32)
     def get_value(self, x, y, z):
         assert (self.source0 is not None)
         assert (self.source1 is not None)
@@ -546,6 +561,7 @@ class Spheres(NoiseModule):
     def __init__(self, frequency=1):
         self.frequency = frequency
 
+    @lru_cache(maxsize=32)
     def get_value(self, x, y, z):
         x *= self.frequency
         y *= self.frequency
@@ -598,6 +614,7 @@ class Terrace(NoiseModule):
     def add_control_point(self, value):
         self.control_points.append(value)
 
+    @lru_cache(maxsize=32)
     def get_value(self, x, y, z):
         assert (self.source0 is not None)
         assert (len(self.control_points) > 1)
@@ -712,6 +729,7 @@ class Turbulence(NoiseModule):
 
         self.source0 = source0
 
+    @lru_cache(maxsize=32)
     def get_value(self, x, y, z):
           x0 = x + (12414.0 / 65536.0)
           y0 = y + (65124.0 / 65536.0)
@@ -771,6 +789,7 @@ class Voronoi(NoiseModule):
         self.frequency = frequency
         self.seed = seed
 
+    @lru_cache(maxsize=32)
     def get_value(self, x, y, z):
         x *= self.frequency
         y *= self.frequency

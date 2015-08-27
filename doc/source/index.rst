@@ -6,6 +6,12 @@
 
 -----------------
 
+**Tutorials:**
+
+.. toctree::
+   tutorial1
+   tutorial2
+
 **Sub-Modules:**
 
 .. toctree::
