@@ -134,11 +134,11 @@ def noise_map_sphere(east_bound=0, west_bound=0, north_bound=0, south_bound=0,
         cur_lon = west_bound
         for x in range(width):
             r = math.cos(math.radians(cur_lat))
-            x = r * math.cos(math.radians(cur_lon))
-            y = math.sin(math.radians(cur_lat))
-            z = r * math.sin(math.radians(cur_lon))
+            xa = r * math.cos(math.radians(cur_lon))
+            ya = math.sin(math.radians(cur_lat))
+            za = r * math.sin(math.radians(cur_lon))
 
-            nm[y][x] = source.get_value(x, y, z)
+            nm[y][x] = source.get_value(xa, ya, za)
 
             cur_lon += x_delta
         cur_lat += y_delta

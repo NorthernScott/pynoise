@@ -533,7 +533,7 @@ class Select(NoiseModule):
             elif control_value < (self.lower_bound + self.edge_falloff):
                 lower_curve = (self.lower_bound - self.edge_falloff)
                 upper_curve = (self.lower_bound + self.edge_falloff)
-                alpha = scurve3((control_value - lower_curve) / upper_curve - lower_curve)
+                alpha = scurve3((control_value - lower_curve) / (upper_curve - lower_curve))
 
                 return linear_interp(self.source0.get_value(x, y, z),
                     self.source1.get_value(x, y, z), alpha)
