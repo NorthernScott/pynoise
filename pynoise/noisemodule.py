@@ -63,6 +63,11 @@ class Abs(NoiseModule):
 
         return abs(self.source0.get_value(x, y, z))
 
+    def get_values(self, min_x, max_x, min_y, max_y, z, width, height, xaxis='x', yaxis='z'):
+        assert self.source0 is not None
+
+        return np.absolute(self.source0.get_values(self, min_x, max_x, min_y, max_y, z, width, height, xaxis, yaxis))
+
 class Add(NoiseModule):
     """ Adds the two given source modules together. """
     def __init__(self, source0, source1):
@@ -74,6 +79,15 @@ class Add(NoiseModule):
         assert (self.source1 is not None)
 
         return self.source0.get_value(x, y, z) + self.source1.get_value(x, y, z)
+
+    def get_values(self, min_x, max_x, min_y, max_y, z, width, height, xaxis='x', yaxis='z'):
+        assert self.source0 is not None
+        assert self.source1 is not None
+
+        a = source0.get_values(self, min_x, max_x, min_y, max_y, z, width, height, xaxis, yaxis)
+        b = source1.get_values(self, min_x, max_x, min_y, max_y, z, width, height, xaxis, yaxis)
+
+        return np.add(a, b)
 
 class Billow(NoiseModule):
     """ Noise function that is more suitable for items like clouds or rocks.
