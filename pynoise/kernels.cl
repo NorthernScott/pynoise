@@ -1,4 +1,11 @@
-vector = [
+#pragma OPENCL EXTENSION cl_amd_printf : enable
+
+__constant int X_NOISE_GEN = 1619;
+__constant int Y_NOISE_GEN = 31337;
+__constant int Z_NOISE_GEN = 6971;
+__constant int SEED_NOISE_GEN = 1013;
+
+__constant double vector[1024] = {
     -0.763874, -0.596439, -0.246489, 0.0, 0.396055, 0.904518, -0.158073, 0.0,
     -0.499004, -0.8665, -0.0131631, 0.0, 0.468724, -0.824756, 0.316346, 0.0,
     0.829598, 0.43195, 0.353816, 0.0, -0.454473, 0.629497, -0.630228, 0.0,
@@ -127,4 +134,104 @@ vector = [
     0.437895, 0.152598, -0.885981, 0.0,    -0.92394, 0.353436, -0.14635, 0.0,
     0.212189, -0.815162, -0.538969, 0.0,    -0.859262, 0.143405, -0.491024, 0.0,
     0.991353, 0.112814, 0.0670273, 0.0,    0.0337884, -0.979891, -0.196654, 0.0
-]
+};
+
+
+double gradient_noise_3d(
+            double fx, double fy, double fz,
+            int ix, int iy, int iz,
+            int seed) {
+  //get our vector index.
+  int vectorIndex = ((1619 * ix) + (31337 * iy) + (6971 * iz) + (1013 * seed));
+
+  vectorIndex = vectorIndex & 0xffffffff;
+  vectorIndex = vectorIndex ^ (vectorIndex >> 8);
+  vectorIndex = vectorIndex & 0xff;
+
+  double xv = vector[vectorIndex << 2];
+  double yv = vector[(vectorIndex << 2) + 1];
+  double zv = vector[(vectorIndex << 2) + 2];
+
+  double xvp = fx - convert_double(ix);
+  double yvp = fy - convert_double(iy);
+  double zvp = fz - convert_double(iz);
+
+  return ((xv * xvp) + (yv * yvp) + (zv * zvp) * 2.12);
+}
+
+double lerp(double n0, double n1, double a) {
+  return ((1 - a) * n0) + (a * n1);
+}
+
+double scurve3(double a) {
+  return (a * a * (3-2*a));
+}
+
+double scurve5(double a) {
+  return (6 * pown(a, 5)) - (15 * pown(a, 4)) + (10 * pown(a, 3));
+}
+
+__kernel void gradient_coherent_noise_3d(
+  __global double *x, __global double *y, __global double *z, __global double *dest,
+  int seed, int quality) {
+
+  //get the index of our array.
+  unsigned int i = get_global_id(0);
+
+  int x0 = trunc(x[i]);
+  if(x[i] <= 0) {
+    x0--;
+  }
+
+  int y0 = trunc(y[i]);
+  if(y[i] <= 0) {
+    y0--;
+  }
+
+  int z0 = trunc(z[i]);
+  if(z[i] <= 0) {
+    z0--;
+  }
+
+  int x1 = x0 + 1;
+  int y1 = y0 + 1;
+  int z1 = z0 + 1;
+
+  double xs = 0;
+  double ys = 0;
+  double zs = 0;
+
+  if(quality == 1) {
+    xs = (x[i] - x0);
+    ys = (y[i] - y0);
+    zs = (z[i] - z0);
+  } else if(quality == 2) {
+    xs = scurve3(x[i]-x0);
+    ys = scurve3(y[i]-y0);
+    zs = scurve3(z[i]-z0);
+  } else {
+    xs = scurve5(x[i]-x0);
+    ys = scurve5(y[i]-y0);
+    zs = scurve5(z[i]-z0);
+  }
+
+  double n0 = gradient_noise_3d(x[i], y[i], z[i], x0, y0, z0, seed);
+  double n1 = gradient_noise_3d(x[i], y[i], z[i], x1, y0, z0, seed);
+  double ix0 = lerp(n0, n1, xs);
+
+  n0 = gradient_noise_3d(x[i], y[i], z[i], x0, y1, z0, seed);
+  n1 = gradient_noise_3d(x[i], y[i], z[i], x1, y1, z0, seed);
+  double ix1 = lerp(n0, n1, xs);
+  double iy0 = lerp(ix0, ix1, ys);
+
+  n0 = gradient_noise_3d(x[i], y[i], z[i], x0, y0, z1, seed);
+  n1 = gradient_noise_3d(x[i], y[i], z[i], x1, y0, z1, seed);
+  ix0 = lerp(n0, n1, xs);
+
+  n0 = gradient_noise_3d(x[i], y[i], z[i], x0, y1, z1, seed);
+  n1 = gradient_noise_3d(x[i], y[i], z[i], x1, y1, z1, seed);
+  ix1 = lerp(n0, n1, xs);
+  double iy1 = lerp(ix0, ix1, ys);
+
+  dest[i] = lerp(iy0, iy1, zs);
+}

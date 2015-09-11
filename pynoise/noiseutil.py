@@ -89,13 +89,15 @@ def noise_map_plane(seamless=False, lower_x=0, upper_x=0, lower_z=0, upper_z=0,
     x_cur = lower_x
     z_cur = lower_z
 
-    nm = np.zeros((height, width))
+    nm = np.zeros(height*width)
+    i = 0
 
-    for z in range(width):
+    for x in range(width):
         x_cur = lower_x
-        for x in range(height):
+        for z in range(height):
             if not seamless:
-                nm[z][x] = source.get_value(x_cur, 0, z_cur)
+                nm[i] = source.get_value(x_cur, 0, z_cur)
+                i += 1
             else:
                 sw = source.get_value(xCur, 0, zCur)
                 se = source.get_value(xCur+x_extent, 0, zCur)
@@ -107,11 +109,22 @@ def noise_map_plane(seamless=False, lower_x=0, upper_x=0, lower_z=0, upper_z=0,
 
                 z0 = linear_interp(sw, se, x_blend)
                 z1 = linear_interp(nw, ne, x_blend)
-                nm[z][x] = linear_interp(z0, z1, z_blend)
+                nm[i] = linear_interp(z0, z1, z_blend)
             x_cur += x_delta
         z_cur += z_delta
 
-    return np.flipud(nm)
+    return nm
+
+def noise_map_plane_gpu(seamless=False, lower_x=0, upper_x=0, lower_z=0, upper_z=0,
+    width=0, height=0, source=None, xaxis='x', yaxis='z'):
+    assert lower_x < upper_x
+    assert lower_z < upper_z
+    assert width > 0
+    assert height > 0
+    assert source is not None
+
+    return source.get_values(lower_x, upper_x, lower_z, upper_z, 0, width, height, xaxis, yaxis)
+
 
 def noise_map_sphere(east_bound=0, west_bound=0, north_bound=0, south_bound=0,
     width=0, height=0, source=None):
@@ -293,3 +306,23 @@ class RenderImage():
                 t = color.get_upscaled_value_tuple()
                 img.putpixel((x,y), (t[0], t[1], t[2]))
         img.save(image_name, 'PNG')
+
+    def render_numpy(self, noisemap, width, height, name, gradient):
+        img = Image.new('RGB', (width, height), '#ffffff')
+        i = 0
+
+        for x in range(width):
+            for y in range(height):
+                dest_color = (gradient.get_color(noisemap[i]))
+
+                light_intensity = 1
+
+                if self.light_enabled:
+                    print('enabled')
+
+                bg_color = sRGBColor(1,1,1)
+                color = self.calc_dest_color(dest_color, bg_color, light_intensity)
+                t = color.get_upscaled_value_tuple()
+                img.putpixel((x,y), (t[0], t[1], t[2]))
+                i += 1
+        img.save(name, 'PNG')

@@ -16,9 +16,35 @@ from sortedcontainers import SortedDict, SortedList
 
 from functools import lru_cache
 
+import numpy as np
+
+
+from pynoise.gpu import GPU
+gpu = GPU()
+gpu.load_program()
+
+def gradient(a, b, c, seed, quality, xaxis, yaxis):
+    if xaxis == 'x':
+        if yaxis == 'y':
+            return gpu.gradient_noise(a, b, c, np.int32(seed), np.int32(quality.value))
+        else:
+            return gpu.gradient_noise(a, c, b, np.int32(seed), np.int32(quality.value))
+    elif xaxis == 'y':
+        if yaxis == 'x':
+            return gpu.gradient_noise(b, a, c, np.int32(seed), np.int32(quality.value))
+        else:
+            return gpu.gradient_noise(b, c, a, np.int32(seed), np.int32(quality.value))
+    else:
+        if yaxis == 'x':
+            return gpu.gradient_noise(c, a, b, np.int32(seed), np.int32(quality.value))
+        else:
+            return gpu.gradient_noise(c, b, a, np.int32(seed), np.int32(quality.value))
 
 class NoiseModule():
     def get_value(self, x, y, z):
+        raise NotImplementedError('Not Implemented.')
+
+    def get_values(self, min_x, max_x, min_y, max_y, z, width, height, xaxis='x', yaxis='z'):
         raise NotImplementedError('Not Implemented.')
 
 class Abs(NoiseModule):
@@ -340,7 +366,7 @@ class Perlin(NoiseModule):
         y *= self.frequency
         z *= self.frequency
 
-        for i in range(0, self.octaves):
+        for i in range(self.octaves):
             seed = (self.seed + i) & 0xffffffff
             signal = gradient_coherent_noise_3d(x, y, z, seed, self.quality)
             value += signal * curPersistence
@@ -348,6 +374,47 @@ class Perlin(NoiseModule):
             x *= self.lacunarity
             y *= self.lacunarity
             z *= self.lacunarity
+            curPersistence *= self.persistence
+
+        return value
+
+    def get_values(self, min_x, max_x, min_y, max_y, z, width, height, xaxis='x', yaxis='z'):
+        """ This gets a 2D slice out of the noise.
+        min_x and max_x defines the width of the 2D array.
+        min_y and max_y defines the height of the 2D array
+        z defines the layer.
+
+        xaxis determines whether to use the x, y or z of the perlin output for the x
+        axis of the 2D array.
+
+        yaxis determines whether to use the x, y or z of the perlin output for the y
+        axis of the 2D array.
+        """
+
+        xa = np.linspace(min_x, max_x, width, dtype=np.float64)
+        xa = np.tile(xa, height)
+        xa = xa * self.frequency
+
+        ya = np.linspace(min_y, max_y, height, dtype=np.float64)
+        ya = np.repeat(ya, width)
+        ya = ya * self.frequency
+
+        za = np.ones(width*height, dtype=np.float64)
+        za = z * za
+        za = za * self.frequency
+
+        value = np.zeros_like(xa, dtype=np.float64)
+        curPersistence = 1.0
+
+        for i in range(self.octaves):
+            seed = (self.seed + i) & 0xffffffff
+            signal = gradient(xa, ya, za, seed, self.quality, xaxis, yaxis)
+
+            value = value + (signal * curPersistence)
+
+            xa = xa * self.lacunarity
+            ya = ya * self.lacunarity
+            za = za * self.lacunarity
             curPersistence *= self.persistence
 
         return value
