@@ -265,7 +265,6 @@ class Const(NoiseModule):
     def get_values(self, min_x, max_x, min_y, max_y, z, width, height, xaxis='x', yaxis='z'):
         return (np.ones(width*height) * const)
 
-
 class Curve(NoiseModule):
     """ Maps the output of source0 to a cubic spline.
     points is a list of tuples that specify input and outputs.
@@ -712,8 +711,6 @@ class RidgedMulti(NoiseModule):
 
         return (value * 1.25) - 1
 
-
-
 class RotatePoint(NoiseModule):
     """ Rotates source0 around the origin before returning a value. This is a
     right hand system, xAngle increases to the right, yAngle increases upwards
@@ -1039,7 +1036,6 @@ class Terrace(NoiseModule):
             alpha *= alpha
 
             rv[r] = linear_interp(value0, value1, alpha)
-
 
 class TranslatePoint(NoiseModule):
     """ Translates the coordinates (x,y,z) of the input value
