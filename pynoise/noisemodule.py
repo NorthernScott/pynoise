@@ -1006,6 +1006,41 @@ class Terrace(NoiseModule):
 
         return linear_interp(value0, value1, alpha)
 
+    def get_values(self, min_x, max_x, min_y, max_y, z, width, height, xaxis='x', yaxis='z'):
+        assert self.source0 is not None
+        assert len(self.control_points) > 1
+
+        v = self.source0.get_values(self, min_x, max_x, min_y, max_y, z, width, height, xaxis, yaxis)
+
+        rv = np.empty_like(v)
+
+        for r, x in enumerate(v):
+            for i, cp in enumerate(self.control_points):
+                if x < cp:
+                    break
+
+            index0 = clamp(i - 1, 0, len(self.control_points)-1)
+            index1 = clamp(i, 0, len(self.control_points)-1)
+
+            if index0 == index1:
+                rv[r] self.control_points[index1]
+                continue
+
+            value0 = self.control_points[index0]
+            value1 = self.control_points[index1]
+            alpha = (value - value0) / (value1 - value0)
+
+            if self.invert_terraces:
+                alpha = 1 - alpha
+                x = value0
+                value0 = value1
+                value1 = x
+
+            alpha *= alpha
+
+            rv[r] = linear_interp(value0, value1, alpha)
+
+
 class TranslatePoint(NoiseModule):
     """ Translates the coordinates (x,y,z) of the input value
     (x+xtran, y+ytran, z+ztran) before returning any output.
@@ -1229,3 +1264,12 @@ class Voronoi(NoiseModule):
         return value + (self.displacement * value_noise_3d(math.floor(xCan),
                                                 math.floor(yCan),
                                                 math.floor(zCan), 0))
+
+    def get_values(self, min_x, max_x, min_y, max_y, z, width, height, xaxis='x', yaxis='z'):
+        xa, ya, za = create_arrays(min_x, max_x, min_y, max_y, z, width, height)
+        rv = np.empty_like(xa)
+
+        for i in range(width*height):
+            rv[i] = get_value(xa[i], ya[i], za[i])
+
+        return rv[i]
