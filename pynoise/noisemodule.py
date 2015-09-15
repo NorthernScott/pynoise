@@ -41,6 +41,21 @@ def gradient(a, b, c, seed, quality, xaxis, yaxis):
             return gpu.gradient_noise(c, b, a, np.int32(seed), np.int32(quality.value))
 
 class NoiseModule():
+    def create_arrays(self, min_x, max_x, min_y, max_y, z, width, height):
+        xa = np.linspace(min_x, max_x, width, dtype=np.float64)
+        xa = np.tile(xa, height)
+        xa *= self.frequency
+
+        ya = np.linspace(min_y, max_y, height, dtype=np.float64)
+        ya = np.repeat(ya, width)
+        ya *= self.frequency
+
+        za = np.ones(width*height, dtype=np.float64)
+        za *= z
+        za *= frequency
+
+        return xa, ya, za
+
     def get_value(self, x, y, z):
         raise NotImplementedError('Not Implemented.')
 
@@ -110,8 +125,13 @@ class Billow(NoiseModule):
         signal = 0
         curPersistence = 1.0
         seed = 0
+
+        x *= self.frequency
+        y *= self.frequency
+        z *= self.frequency
+
         for octave in range(self.octaves):
-            seed = self.seed + octave
+            seed = (self.seed + octave) & 0xffffffff
             signal = gradient_coherent_noise_3d(x, y, z, seed, self.quality)
             signal = 2 * abs(signal) - 1.0
             value += signal * curPersistence
@@ -119,6 +139,31 @@ class Billow(NoiseModule):
             x *= self.lacunarity
             y *= self.lacunarity
             z *= self.lacunarity
+
+            curPersistence *= self.persistence
+
+        value += 0.5
+
+        return value
+
+    def get_values(self, min_x, max_x, min_y, max_y, z, width, height, xaxis='x', yaxis='z'):
+        xa, ya, za = create_arrays(min_x, max_x, min_y, max_y, z, width, height)
+
+        value = np.zeros_like(xa)
+        curPersistence = 1
+
+        for octave in range(self.octaves):
+            seed = (self.seed + octave) & 0xffffffff
+            signal = gradient(xa, ya, za, seed, self.quality, xaxis, yaxis)
+            signal = np.absolute(signal)
+            signal *= 2
+            signal -= 1
+
+            value = value + (signal * curPersistence)
+
+            xa *= self.lacunarity
+            ya *= self.lacunarity
+            za *= self.lacunarity
 
             curPersistence *= self.persistence
 
@@ -147,17 +192,40 @@ class Blend(NoiseModule):
 
         return linear_interp(v0, v1, alpha)
 
+    def get_values(self, min_x, max_x, min_y, max_y, z, width, height, xaxis='x', yaxis='z'):
+        assert self.source0 is not None
+        assert self.source1 is not None
+        assert self.source2 is not None
+
+        v0 = self.source0.get_values(self, min_x, max_x, min_y, max_y, z, width, height, xaxis, yaxis):
+        v1 = self.source1.get_values(self, min_x, max_x, min_y, max_y, z, width, height, xaxis, yaxis):
+        alpha = self.source2.get_values(self, min_x, max_x, min_y, max_y, z, width, height, xaxis, yaxis):
+        alpha += 1
+        alpha /= 2
+
+        return gpu.linear_interp(v0, v1, alpha)
+
 class Checkerboard(NoiseModule):
+    def _checker(self, ix, iy, iz):
+        if ((ix & 1 ^ iy & 1 ^ iz & 1) != 0):
+            return -1
+        else:
+            return 1
+
     @lru_cache(maxsize=32)
     def get_value(self, x, y, z):
         ix = int(math.floor(x))
         iy = int(math.floor(y))
         iz = int(math.floor(z))
 
-        if ((ix & 1 ^ iy & 1 ^ iz & 1) != 0):
-            return -1
-        else:
-            return 1
+        return _checker(ix, iy, iz)
+
+    def get_values(self, min_x, max_x, min_y, max_y, z, width, height, xaxis='x', yaxis='z'):
+        xa, ya, za = create_arrays(min_x, max_x, min_y, max_y, z, width, height)
+
+        vfunc = np.vectorize(_checker)
+
+        return vfunc(xa, ya, za)
 
 class Clamp():
     """ Clamps a source between lower_bound and upper_bound.
@@ -181,12 +249,22 @@ class Clamp():
         else:
             return value
 
+    def get_values(self, min_x, max_x, min_y, max_y, z, width, height, xaxis='x', yaxis='z'):
+        assert self.source0 is not None
+
+        v = source0.get_values(self, min_x, max_x, min_y, max_y, z, width, height, xaxis, yaxis)
+        return np.clip(v, lower_bound, upper_bound)
+
 class Const(NoiseModule):
     def __init__(self, const):
         self.const = const
 
     def get_value(self, x, y, z):
         return self.const
+
+    def get_values(self, min_x, max_x, min_y, max_y, z, width, height, xaxis='x', yaxis='z'):
+        return (np.ones(width*height) * const)
+
 
 class Curve(NoiseModule):
     """ Maps the output of source0 to a cubic spline.
@@ -242,6 +320,44 @@ class Curve(NoiseModule):
             alpha
         )
 
+    def get_values(self, min_x, max_x, min_y, max_y, z, width, height, xaxis='x', yaxis='z'):
+        assert self.source0 is not None
+        assert len(self.control_points.keys()) >= 4
+
+        xa, ya, za = create_arrays(min_x, max_x, min_y, max_y, z, width, height)
+
+        dest = np.empty_like(xa)
+
+        for i, l in enumerate(np.nditer([xa, ya, za])):
+            value = self.source0.get_value(l[0], l[1], l[2])
+
+            for i, k in enumerate(self.control_points.keys()):
+            if value < k:
+                break
+
+            index0 = clamp(i - 2, 0, len(self.control_points.keys())-1)
+            index1 = clamp(i - 1, 0, len(self.control_points.keys())-1)
+            index2 = clamp(i,     0, len(self.control_points.keys())-1)
+            index3 = clamp(i + 1, 0, len(self.control_points.keys())-1)
+
+            if index1 == index2:
+                return self.control_points[k]
+
+            l = list(self.control_points.keys())
+
+            input0 = l[index1]
+            input1 = l[index2]
+            alpha = (value - input0) / (input1 - input0)
+
+            dest[i] = cubic_interp(
+                self.control_points[l[index0]],
+                self.control_points[l[index1]],
+                self.control_points[l[index2]],
+                self.control_points[l[index3]],
+                alpha)
+
+        return dest
+
 class Cylinders(NoiseModule):
     """ Outputs a series of concentric cyliners centered around 0,y,0.
     There is a new cylinder every `frequency` lengths from origin. Default
@@ -261,6 +377,11 @@ class Cylinders(NoiseModule):
         nearest = min(small, large)
 
         return 1.0 - (nearest * 4.0)
+
+    def get_values(self, min_x, max_x, min_y, max_y, z, width, height, xaxis='x', yaxis='z'):
+        xa, ya, za = create_arrays(min_x, max_x, min_y, max_y, z, width, height)
+
+        return gpu.cylinders(xa, za)
 
 class Displace(NoiseModule):
     """ Displaces source3 output by the outputs of source0, source1, and source2.
@@ -286,6 +407,22 @@ class Displace(NoiseModule):
 
         return self.source3.get_value(xD, yD, zD)
 
+    def get_values(self, min_x, max_x, min_y, max_y, z, width, height, xaxis='x', yaxis='z'):
+        assert(self.source0 is not None)
+        assert(self.source1 is not None)
+        assert(self.source2 is not None)
+        assert(self.source3 is not None)
+
+        xa, ya, za = create_arrays(min_x, max_x, min_y, max_y, z, width, height)
+
+        xD = xa + self.source0.get_values(self, min_x, max_x, min_y, max_y, z, width, height, xaxis, yaxis)
+        yD = ya + self.source1.get_values(self, min_x, max_x, min_y, max_y, z, width, height, xaxis, yaxis)
+        zD = za + self.source2.get_values(self, min_x, max_x, min_y, max_y, z, width, height, xaxis, yaxis)
+
+        return self.source3.get_values(self, min_x + np.amin(xD),
+            max_x + np.amax(xD), min_y + np.amin(yD), max_y + np.amax(yD),
+            z + zD[0], width, height, xaxis, yaxis)
+
 class Exponent(NoiseModule):
     """  Sets the exponent value to apply to the output value from the
     source module.
@@ -307,6 +444,20 @@ class Exponent(NoiseModule):
 
         return math.pow(abs((value + 1) / 2), self.exponent) * 2 - 1
 
+    def get_values(self, min_x, max_x, min_y, max_y, z, width, height, xaxis='x', yaxis='z'):
+        assert self.source0 is not None
+
+        values = self.source0.get_values(self, min_x, max_x, min_y, max_y, z, width, height, xaxis, yaxis)
+
+        values += 1
+        values /= 2
+        values = np.absolute(values)
+        values = np.power(values, self.exponent)
+        values *= 2
+        values -= 1
+
+        return values
+
 class Invert(NoiseModule):
     """ Inverts the sign of the given source. """
     def __init__(self, source0):
@@ -317,8 +468,14 @@ class Invert(NoiseModule):
 
         return -(self.source0.get_value(x, y, z))
 
+    def get_values(self, min_x, max_x, min_y, max_y, z, width, height, xaxis='x', yaxis='z'):
+        assert self.source0 is not None
+
+        v = self.source0.get_values(self, min_x, max_x, min_y, max_y, z, width, height, xaxis, yaxis)
+        return v * -1
+
 class Max(NoiseModule):
-    """ Chooses the large value of source0 and source1. """
+    """ Chooses the larger value of source0 and source1. """
     def __init__(self, source0, source1):
         self.source0 = source0
         self.source1 = source1
@@ -331,6 +488,15 @@ class Max(NoiseModule):
         v1 = self.source1.get_value(x, y, z)
 
         return max(v0, v1)
+
+    def get_values(self, min_x, max_x, min_y, max_y, z, width, height, xaxis='x', yaxis='z'):
+        assert self.source0 is not None
+        assert self.source1 is not None
+
+        a = self.source0.get_values(self, min_x, max_x, min_y, max_y, z, width, height, xaxis, yaxis)
+        b = self.source1.get_values(self, min_x, max_x, min_y, max_y, z, width, height, xaxis, yaxis)
+
+        return np.maximum(a, b)
 
 class Min(NoiseModule):
     """ Chooses the lesser value of source0 and source1. """
@@ -347,6 +513,15 @@ class Min(NoiseModule):
 
         return min(v0, v1)
 
+    def get_values(self, min_x, max_x, min_y, max_y, z, width, height, xaxis='x', yaxis='z'):
+        assert self.source0 is not None
+        assert self.source1 is not None
+
+        a = self.source0.get_values(self, min_x, max_x, min_y, max_y, z, width, height, xaxis, yaxis)
+        b = self.source1.get_values(self, min_x, max_x, min_y, max_y, z, width, height, xaxis, yaxis)
+
+        return np.minimum(a, b)
+
 class Multiply(NoiseModule):
     """ Multiplies source0 by source1. """
     def __init__(self, source0, source1):
@@ -359,6 +534,15 @@ class Multiply(NoiseModule):
         assert(self.source1 is not None)
 
         return self.source0.get_value(x, y, z) * self.source1.get_value(x, y, z)
+
+    def get_values(self, min_x, max_x, min_y, max_y, z, width, height, xaxis='x', yaxis='z'):
+        assert self.source0 is not None
+        assert self.source1 is not None
+
+        a = self.source0.get_values(self, min_x, max_x, min_y, max_y, z, width, height, xaxis, yaxis)
+        b = self.source1.get_values(self, min_x, max_x, min_y, max_y, z, width, height, xaxis, yaxis)
+
+        return np.multiplie(a, b)
 
 class Perlin(NoiseModule):
     """ The classic noise. https://en.wikipedia.org/wiki/Perlin_noise """
@@ -405,17 +589,7 @@ class Perlin(NoiseModule):
         axis of the 2D array.
         """
 
-        xa = np.linspace(min_x, max_x, width, dtype=np.float64)
-        xa = np.tile(xa, height)
-        xa = xa * self.frequency
-
-        ya = np.linspace(min_y, max_y, height, dtype=np.float64)
-        ya = np.repeat(ya, width)
-        ya = ya * self.frequency
-
-        za = np.ones(width*height, dtype=np.float64)
-        za = z * za
-        za = za * self.frequency
+        xa, ya, za = create_arrays(min_x, max_x, min_y, max_y, z, width, height)
 
         value = np.zeros_like(xa, dtype=np.float64)
         curPersistence = 1.0
@@ -434,7 +608,7 @@ class Perlin(NoiseModule):
         return value
 
 class Power(NoiseModule):
-    """ source0 ^ source1. Does not apply scaling. """
+    """ source0 ** source1. Does not apply scaling. """
     def __init__(self, source0, source1):
         self.source0 = source0
         self.source1 = source1
@@ -445,6 +619,15 @@ class Power(NoiseModule):
         assert (self.source1 is not None)
 
         return self.source0.get_value(x,y,z)**self.source1.get_value(x,y,z)
+
+    def get_values(self, min_x, max_x, min_y, max_y, z, width, height, xaxis='x', yaxis='z'):
+        assert self.source0 is not None
+        assert self.source1 is not None
+
+        a = self.source0.get_values(self, min_x, max_x, min_y, max_y, z, width, height, xaxis, yaxis)
+        b = self.source1.get_values(self, min_x, max_x, min_y, max_y, z, width, height, xaxis, yaxis)
+
+        return np.power(a, b)
 
 class RidgedMulti(NoiseModule):
     """ This is much like perlin noise, however each octave is modified by
@@ -478,7 +661,7 @@ class RidgedMulti(NoiseModule):
         weight = 1.0
 
         for i in range(self.octaves):
-            seed = (self.seed + i) * 0x7fffffff
+            seed = (self.seed + i) & 0x7fffffff
             signal = gradient_coherent_noise_3d(x, y, z, seed, self.quality)
 
             signal = abs(signal)
@@ -502,6 +685,34 @@ class RidgedMulti(NoiseModule):
             z *= self.lacunarity
 
         return (value * 1.25) - 1
+
+    def get_values(self, min_x, max_x, min_y, max_y, z, width, height, xaxis='x', yaxis='z'):
+        xa, ya, za = create_arrays(min_x, max_x, min_y, max_y, z, width, height)
+
+        value = np.zeros_like(xa)
+        weight = np.ones_like(xa)
+
+        for i in range(self.octaves):
+            seed = (self.seed + i) & 0x7fffffff
+
+            signal = gradient(xa, ya, za, seed, self.quality, xaxism yaxis)
+            signal = np.absolute(signal)
+            signal *= signal
+            signal *= weight
+
+            weight = signal * self.gain
+
+            weight = np.clip(weight, 0, 1)
+
+            value += (signal * self.weights[i])
+
+            xa *= self.lacunarity
+            ya *= self.lacunarity
+            za *= self.lacunarity
+
+        return (value * 1.25) - 1
+
+
 
 class RotatePoint(NoiseModule):
     """ Rotates source0 around the origin before returning a value. This is a
@@ -541,6 +752,19 @@ class RotatePoint(NoiseModule):
 
         return self.source0.get_value(nx, ny, nz)
 
+    def get_values(self, min_x, max_x, min_y, max_y, z, width, height, xaxis='x', yaxis='z'):
+        assert self.source0 is not None
+
+        xa, ya, za = create_arrays(min_x, max_x, min_y, max_y, z, width, height)
+
+        nx = (self.x1a * xa) + (self.y1a * ya) + (self.z1a * za)
+        ny = (self.x2a * xa) + (self.y2a * ya) + (self.z2a * za)
+        nz = (self.x3a * xa) + (self.y3a * ya) + (self.z3a * za)
+
+        return self.source0.get_values(self, min_x + np.amin(nx),
+            max_x + np.amax(nx), min_y + np.amin(yx), max_y + np.amax(yx),
+            z + nz[0], width, height, xaxis, yaxis)
+
 class ScaleBias(NoiseModule):
     """ Takes the value of source0 and multiplies by scale and adds by bias. """
     def __init__(self, source0, bias=0, scale=1):
@@ -553,6 +777,12 @@ class ScaleBias(NoiseModule):
         assert (self.source0 is not None)
 
         return self.source0.get_value(x, y, z) * self.scale + self.bias
+
+    def get_values(self, min_x, max_x, min_y, max_y, z, width, height, xaxis='x', yaxis='z'):
+        assert self.source0 is not None
+
+        return get_values(self, min_x, max_x, min_y, max_y, z,
+            width, height, xaxis, yaxis) * self.scale + self.bias
 
 class ScalePoint(NoiseModule):
     """ Scales the x,y,z before returning source0 value. """
@@ -567,6 +797,13 @@ class ScalePoint(NoiseModule):
         assert (self.source0 is not None)
 
         return self.source0.get_value(x * self.sx, y * self.sy, z * self.sz)
+
+    def get_values(self, min_x, max_x, min_y, max_y, z, width, height, xaxis='x', yaxis='z'):
+        assert self.source0 is not None
+
+        return get_values(self, min_x * self.sx, max_x * self.sx,
+            min_y * self.sy, max_y * self.sy, z * self.sz,
+            width, height, xaxis, yaxis)
 
 class Select(NoiseModule):
     """
@@ -637,6 +874,44 @@ class Select(NoiseModule):
             else:
                 return self.source1.get_value(x, y, z)
 
+    def get_values(self, min_x, max_x, min_y, max_y, z, width, height, xaxis='x', yaxis='z'):
+        assert self.source0 is not None
+        assert self.source1 is not None
+        assert self.source2 is not None
+
+        s0a = get_values(self, min_x, max_x, min_y, max_y, z, width, height, xaxis, yaxis)
+        s1a = get_values(self, min_x, max_x, min_y, max_y, z, width, height, xaxis, yaxis)
+        s2a = get_values(self, min_x, max_x, min_y, max_y, z, width, height, xaxis, yaxis)
+        rv = np.empty_like(s0a)
+
+        if self.edge_falloff > 0:
+            for i, a in enumerate(np.nditer([s0a, s1a, s2a])):
+                if a[2] < (self.lower_bound - self.edge_falloff):
+                    rv[i] = a[0]
+                elif control_value < (self.lower_bound + self.edge_falloff):
+                    lower_curve = (self.lower_bound - self.edge_falloff)
+                    upper_curve = (self.lower_bound + self.edge_falloff)
+                    alpha = scurve3((control_value - lower_bound) / (upper_curve - lower_curve))
+
+                    rv[i] = linear_interp(a[1], a[0], alpha)
+                elif control_value < (self.upper_bound - self.edge_falloff):
+                    rv[i] = a[1][i]
+                elif control_value < (self.upper_bound + self.edge_falloff):
+                    lower_curve = (self.upper_bound - self.edge_falloff)
+                    upper_curve = (self.upper_bound + self.edge_falloff)
+                    alpha = scurve3((control_value - lower_curve) / (upper_curve - lower_curve))
+                    rv[i] = linear_interp(a[1], a[0], alpha)
+                else:
+                    rv[i] = a[0]
+        else:
+            for i, a in enumerate(np.nditer([s0a, s1a, s2a])):
+                if a[2] < self.lower_bound or a[2] > self.upper_bound:
+                    rv[i] = a[0]
+                else:
+                    rv[i] = a[1]
+
+        return rv
+
 class Spheres(NoiseModule):
     """ Generates a series of concentric spheres centered around 0,0,0. """
     def __init__(self, frequency=1):
@@ -653,6 +928,11 @@ class Spheres(NoiseModule):
         large = 1 - small
         nearest = min(small, large)
         return 1 - (nearest*4)
+
+    def get_values(self, min_x, max_x, min_y, max_y, z, width, height, xaxis='x', yaxis='z'):
+        xa, ya, za = create_arrays(min_x, max_x, min_y, max_y, z, width, height)
+
+        return gpu.spheres(xa, ya, za)
 
 class Terrace(NoiseModule):
     """
@@ -741,6 +1021,13 @@ class TranslatePoint(NoiseModule):
 
         return self.source0.get_value(x+self.xtran, y+self.ytran, z+self.ztran)
 
+    def get_values(self, min_x, max_x, min_y, max_y, z, width, height, xaxis='x', yaxis='z'):
+        assert self.source0 is not None
+
+        return self.source0.get_values(self, min_x+self.xtran, max_x+self.xtran,
+            min_y+self.ytran, max_y+self.ytran, z+self.ztran,
+            width, height, xaxis, yaxis)
+
 class Turbulence(NoiseModule):
     """
     Noise module that randomly displaces the input value before
@@ -827,6 +1114,33 @@ class Turbulence(NoiseModule):
           zDistort = z + (self.zdm.get_value(x2, y2, z2) * self.power)
 
           return self.source0.get_value(xDistort, yDistort, zDistort)
+
+    def get_values(self, min_x, max_x, min_y, max_y, z, width, height, xaxis='x', yaxis='z'):
+        x0 = x + (12414.0 / 65536.0)
+        y0 = y + (65124.0 / 65536.0)
+        z0 = z + (31337.0 / 65536.0)
+
+        x1 = x + (26519.0 / 65536.0)
+        y1 = y + (18128.0 / 65536.0)
+        z1 = z + (60493.0 / 65536.0)
+
+        x2 = x + (53820.0 / 65536.0)
+        y2 = y + (11213.0 / 65536.0)
+        z2 = z + (44845.0 / 65536.0)
+
+        xa = self.xdm.get_values(self, min_x+x0, max_x+x0, min_y+y0, max_y+y0, z+z0, width, height, xaxis, yaxis)
+        ya = self.ydm.get_values(self, min_x+x1, max_x+x1, min_y+y1, max_y+y1, z+z1, width, height, xaxis, yaxis)
+        za = self.zdm.get_values(self, min_x+x2, max_x+x2, min_y+y2, max_y+y2, z+z2, width, height, xaxis, yaxis)
+
+        xa *= self.power
+        ya *= self.power
+        za *= self.power
+
+        xa += x
+        ya += y
+        za += z
+
+        return self.source0.get_values(self, min_x+xa, max_x+xa, min_y+ya, max_y+ya, z+za, width, height, xaxis, yaxis)
 
 class Voronoi(NoiseModule):
     """

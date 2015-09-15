@@ -31,3 +31,72 @@ class GPU:
         cl.enqueue_read_buffer(self.queue, dest_buf, rv).wait()
 
         return rv
+
+    def linear_interp(self, n0, n1, a):
+        mf = cl.mem_flags
+
+        n0_buf = cl.Buffer(self.ctx, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf = n0)
+        n1_buf = cl.Buffer(self.ctx, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf = n1)
+        a_buf = cl.Buffer(self.ctx, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf = a)
+        dest_buf = cl.Buffer(self.ctx, mf.WRITE_ONLY, n0.nbytes)
+
+        self.program.linear_interp(self.queue, n0.shape, None,
+            n0_buf, n1_buf, a_buf, dest_buf)
+
+        rv = np.empty_like(n0)
+
+        cl.enqueue_read_buffer(self.queue, dest_buf, rv).wait()
+
+        return rv
+
+    def cubic_interp(self, n0, n1, n2, n3, alpha):
+        mf = cl.mem_flags
+
+        n0_buf = cl.Buffer(self.ctx, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf = n0)
+        n1_buf = cl.Buffer(self.ctx, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf = n1)
+        n2_buf = cl.Buffer(self.ctx, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf = n2)
+        n3_buf = cl.Buffer(self.ctx, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf = n3)
+        a_buf = cl.Buffer(self.ctx, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf = alpha)
+        dest_buf = cl.Buffer(self.ctx, mf.WRITE_ONLY, n0.nbytes)
+
+        self.program.cubic_interp(self.queue, n0.shape, None,
+            n0_buf, n1_buf, n2_buf, n3_buf, a_buf, dest_buf)
+
+        rv = np.empty_like(n0)
+
+        cl.enqueue_read_buffer(self.queue, dest_buf, rv).wait()
+
+        return rv
+
+    def cylinders(self, xa, za):
+        mf = cl.mem_flags
+
+        xbuf = cl.Buffer(self.ctx, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf = xa)
+        zbuf = cl.Buffer(self.ctx, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf = za)
+        dest = cl.Buffer(self.ctx, mf.WRITE_ONLY, xa.nbytes)
+
+        self.program.cylinders(self.queue, xa.shape, None,
+            xbuf, zbuf, dest)
+
+        rv = np.empty_like(xa)
+
+        cl.enqueue_read_buffer(self.queue, dest, rv).wait()
+
+        return rv
+
+    def spheres(self, xa, ya, za):
+        mf = cl.mem_flags
+
+        xbuf = cl.Buffer(self.ctx, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf = xa)
+        ybuf = cl.Buffer(self.ctx, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf = ya)
+        zbuf = cl.Buffer(self.ctx, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf = za)
+        dest = cl.Buffer(self.ctx, mf.WRITE_ONLY, xa.nbytes)
+
+        self.program.spheres(self.queue, xa.shape, None,
+            xbuf, ybuf, zbuf, dest)
+
+        rv = np.empty_like(xa)
+
+        cl.enqueue_read_buffer(self.queue, dest, rv).wait()
+
+        return rv

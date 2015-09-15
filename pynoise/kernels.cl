@@ -171,6 +171,47 @@ double scurve5(double a) {
   return (6 * pown(a, 5)) - (15 * pown(a, 4)) + (10 * pown(a, 3));
 }
 
+__kernel void linear_interp(__global double *n0, __global double *n1,
+    __global double *a, __global double *dest) {
+  unsigned int i = get_global_id(0);
+
+  dest[i] = lerp(n0[i], n1[i], a[i]);
+}
+
+__kernel void cubic_interp(__global double *n0, __global double *n1,
+    __global double *n2, __global double *n3, __global double *alpha, __global double *dest) {
+  unsigned int i = get_global_id(0);
+
+  double p = (n3[i] - n2[i]) - (n0[i] - n1[i]);
+  double q = (n0[i] - n1[i]) - p;
+  double r = n2[i] - n0[i];
+
+  dest[i] = (p*pown(a,3)) + (q*pown(a,2)) + (r*a) + n1[i];
+}
+
+__kernel void cylinders(__global double *x, __global double *z, __global double *dest) {
+  unsigned int i = get_global_id(0);
+
+  double center = hypot(x[i], z[i]);
+  double small = center - floor(center);
+  double large = 1 - small;
+  double nearest = fmin(large, small);
+
+  dest[i] = 1 - (nearest * 4);
+}
+
+__kernel void spheres(__global double *x, __global double *y, __global double *z,
+    __global *dest) {
+  unsigned int i = get_global_id(0);
+
+  double center = sqrt(x[i]*x[i] + y[i] * y[i] + z[i]*z[i])  ;
+  double small = center - floor(center);
+  double large = 1 - small;
+  nearest = fmin(large, small);
+
+  dest[i] = 1 - (nearest*4);
+}
+
 __kernel void gradient_coherent_noise_3d(
   __global double *x, __global double *y, __global double *z, __global double *dest,
   int seed, int quality) {
