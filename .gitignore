@@ -11,3 +11,4 @@ dist/
 .coverage
 doc/build/
 *.png
+pynoise.egg-info/*

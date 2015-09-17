@@ -102,7 +102,7 @@ def noise_map_plane(seamless=False, lower_x=0, upper_x=0, lower_z=0, upper_z=0,
                 sw = source.get_value(xCur, 0, zCur)
                 se = source.get_value(xCur+x_extent, 0, zCur)
                 nw = source.get_value(xCur, 0, zCur+z_extent)
-                ne = source.get_value(xCur+x_extent, 0, z_extent)
+                ne = source.get_value(xCur+x_extent, 0, zCur+z_extent)
 
                 x_blend = 1 - ((xCur - lower_x) / x_extent)
                 z_blend = 1 - ((zCur - lower_z) / z_extent)
@@ -123,7 +123,25 @@ def noise_map_plane_gpu(seamless=False, lower_x=0, upper_x=0, lower_z=0, upper_z
     assert height > 0
     assert source is not None
 
-    return source.get_values(lower_x, upper_x, lower_z, upper_z, 0, width, height, xaxis, yaxis)
+    if not seamless:
+        return source.get_values(lower_x, upper_x, lower_z, upper_z, 0, width, height, xaxis, yaxis)
+    else:
+        x_extent = upper_x - lower_x
+        z_extent = upper_z - lower_z
+
+        se = source.get_values(lower_x+x_extent, upper_x+x_extent, lower_z, upper_z, 0, width, height, xaxis, yaxis)
+        sw = source.get_values(lower_x, upper_x, lower_z, upper_z, 0, width, height, xaxis, yaxis)
+        nw = source.get_values(lower_x, upper_x, lower_z+z_extent, upper_z+z_extent, 0, width, height, xaxis, yaxis)
+        ne = source.get_values(lower_x+x_extent, upper_x+x_extent, lower_z+z_extent, upper_z+z_extent, 0, width, height, xaxis, yaxis)
+
+        x_blend = 1 - ((np.linspace(lower_x, upper_x, width*height)) / x_extent)
+        z_blend = 1 - ((np.linspace(lower_z, upper_z, width*height)) / z_extent)
+
+        z0 = gpu.linear_interp(sw, se, x_blend)
+        z1 = gpu.linear_interp(nw, ne, x_blend)
+
+        return gpu.linear_interp(z0, z1, z_blend)
+
 
 
 def noise_map_sphere(east_bound=0, west_bound=0, north_bound=0, south_bound=0,
@@ -157,6 +175,10 @@ def noise_map_sphere(east_bound=0, west_bound=0, north_bound=0, south_bound=0,
         cur_lat += y_delta
 
     return np.flipud(nm)
+
+def noise_map_sphere_gpu(east_bound=0, west_bound=0, north_bound=0, south_bound=0,
+    width=0, height=0, xaxis='x', yaxis='z', source=None):
+    source.get_values(east_bound, west_bound, south_bound, north_bound, z, width, height, xaxis='x', yaxis='z')
 
 def grayscale_gradient():
     grad = GradientColor()
