@@ -201,7 +201,7 @@ class Blend(NoiseModule):
 
         v0 = self.source0.get_values(width, height, min_x, max_x, min_y, max_y, min_z, max_z)
         v1 = self.source1.get_values(width, height, min_x, max_x, min_y, max_y, min_z, max_z)
-        alpha = (self.source2.get_values(width, height min_x, max_x, min_y, max_y, min_z, max_z) + 1) / 2
+        alpha = (self.source2.get_values(width, height, min_x, max_x, min_y, max_y, min_z, max_z) + 1) / 2
 
         return gpu.linear_interp(v0, v1, alpha)
 
