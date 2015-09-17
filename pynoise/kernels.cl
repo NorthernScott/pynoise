@@ -186,7 +186,7 @@ __kernel void cubic_interp(__global double *n0, __global double *n1,
   double q = (n0[i] - n1[i]) - p;
   double r = n2[i] - n0[i];
 
-  dest[i] = (p*pown(a,3)) + (q*pown(a,2)) + (r*a) + n1[i];
+  dest[i] = (p*pown(alpha[i],3)) + (q*pown(alpha[i],2)) + (r*alpha[i]) + n1[i];
 }
 
 __kernel void cylinders(__global double *x, __global double *z, __global double *dest) {
@@ -207,7 +207,7 @@ __kernel void spheres(__global double *x, __global double *y, __global double *z
   double center = sqrt(x[i]*x[i] + y[i] * y[i] + z[i]*z[i])  ;
   double small = center - floor(center);
   double large = 1 - small;
-  nearest = fmin(large, small);
+  double nearest = fmin(large, small);
 
   dest[i] = 1 - (nearest*4);
 }

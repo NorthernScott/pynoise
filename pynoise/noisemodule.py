@@ -197,9 +197,9 @@ class Blend(NoiseModule):
         assert self.source1 is not None
         assert self.source2 is not None
 
-        v0 = self.source0.get_values(self, min_x, max_x, min_y, max_y, z, width, height, xaxis, yaxis):
-        v1 = self.source1.get_values(self, min_x, max_x, min_y, max_y, z, width, height, xaxis, yaxis):
-        alpha = self.source2.get_values(self, min_x, max_x, min_y, max_y, z, width, height, xaxis, yaxis):
+        v0 = self.source0.get_values(self, min_x, max_x, min_y, max_y, z, width, height, xaxis, yaxis)
+        v1 = self.source1.get_values(self, min_x, max_x, min_y, max_y, z, width, height, xaxis, yaxis)
+        alpha = self.source2.get_values(self, min_x, max_x, min_y, max_y, z, width, height, xaxis, yaxis)
         alpha += 1
         alpha /= 2
 
@@ -218,12 +218,12 @@ class Checkerboard(NoiseModule):
         iy = int(math.floor(y))
         iz = int(math.floor(z))
 
-        return _checker(ix, iy, iz)
+        return self._checker(ix, iy, iz)
 
     def get_values(self, min_x, max_x, min_y, max_y, z, width, height, xaxis='x', yaxis='z'):
         xa, ya, za = create_arrays(min_x, max_x, min_y, max_y, z, width, height)
 
-        vfunc = np.vectorize(_checker)
+        vfunc = np.vectorize(_checker())
 
         return vfunc(xa, ya, za)
 
@@ -331,8 +331,8 @@ class Curve(NoiseModule):
             value = self.source0.get_value(l[0], l[1], l[2])
 
             for i, k in enumerate(self.control_points.keys()):
-            if value < k:
-                break
+                if value < k:
+                    break
 
             index0 = clamp(i - 2, 0, len(self.control_points.keys())-1)
             index1 = clamp(i - 1, 0, len(self.control_points.keys())-1)
@@ -694,7 +694,7 @@ class RidgedMulti(NoiseModule):
         for i in range(self.octaves):
             seed = (self.seed + i) & 0x7fffffff
 
-            signal = gradient(xa, ya, za, seed, self.quality, xaxism yaxis)
+            signal = gradient(xa, ya, za, seed, self.quality, xaxis, yaxis)
             signal = np.absolute(signal)
             signal *= signal
             signal *= weight
@@ -1020,7 +1020,7 @@ class Terrace(NoiseModule):
             index1 = clamp(i, 0, len(self.control_points)-1)
 
             if index0 == index1:
-                rv[r] self.control_points[index1]
+                rv[r] = self.control_points[index1]
                 continue
 
             value0 = self.control_points[index0]
