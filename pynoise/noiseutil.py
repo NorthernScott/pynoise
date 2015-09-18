@@ -178,7 +178,17 @@ def noise_map_sphere(east_bound=0, west_bound=0, north_bound=0, south_bound=0,
 
 def noise_map_sphere_gpu(east_bound=0, west_bound=0, north_bound=0, south_bound=0,
     width=0, height=0, xaxis='x', yaxis='z', source=None):
-    source.get_values(east_bound, west_bound, south_bound, north_bound, z, width, height, xaxis='x', yaxis='z')
+
+    longs = np.radians(np.linspace(south_bound, north_bound, width*height))
+    lats = np.radians(np.linspace(west_bound, east_bound, width*height))
+
+    r = np.cos(lats)
+    xa = r * np.cos(longs)
+    ya = r * np.sin(lats)
+    za = r * np.sin(longs)
+
+    return source.get_values(width, height, np.amin(xa), np.amax(xa),
+        np.amin(ya), np.amax(ya), np.amin(za), np.amax(za))
 
 def grayscale_gradient():
     grad = GradientColor()
