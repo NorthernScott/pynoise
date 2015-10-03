@@ -267,7 +267,12 @@ def test_translatepoint():
 def test_turbulence():
     c0 = Const(1)
     t0 = Turbulence(c0)
+
+    p0 = Perlin()
+    t1 = Turbulence(p0)
+
     t0.get_value(0,0,0)
+    assert within(t1.get_value(0,0,0), t1.get_values(1,1, 0,0, 0,0, 0,0))
 
 def test_voronoi():
     v = Voronoi()
