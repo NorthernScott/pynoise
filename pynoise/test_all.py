@@ -33,8 +33,14 @@ def test_add():
     add0 = Add(const0, const1)
     add1 = Add(const1, const2)
 
+    p0 = Perlin()
+    p1 = Perlin(seed=2)
+
+    add2 = Add(p0, p1)
+
     assert add0.get_value(0,0,0) == 3
     assert add1.get_value(0,0,0) == 5
+    assert within(add2.get_value(0,0,0), add2.get_values(1,1, 0,0, 0,0, 0,0), 0.000001)
 
 def test_billow():
     billow = Billow()

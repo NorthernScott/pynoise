@@ -54,7 +54,7 @@ class NoiseModule():
             max_z = min_z
 
         za = np.linspace(min_z, max_z, width*height, dtype=np.float64)
-        za *= frequency
+        za *= self.frequency
 
         return xa, ya, za
 
@@ -101,8 +101,8 @@ class Add(NoiseModule):
         assert self.source0 is not None
         assert self.source1 is not None
 
-        a = source0.get_values(self, width, height, min_x, max_x, min_y, max_y,min_z, max_z)
-        b = source1.get_values(self, width, height, min_x, max_x, min_y, max_y, min_z, max_z)
+        a = self.source0.get_values(width, height, min_x, max_x, min_y, max_y,min_z, max_z)
+        b = self.source1.get_values(width, height, min_x, max_x, min_y, max_y, min_z, max_z)
 
         return np.add(a, b)
 
@@ -576,26 +576,15 @@ class Perlin(NoiseModule):
         return value
 
     def get_values(self, width, height, min_x, max_x, min_y, max_y, min_z, max_z=None):
-        """ This gets a 2D slice out of the noise.
-        min_x and max_x defines the width of the 2D array.
-        min_y and max_y defines the height of the 2D array
-        z defines the layer.
 
-        xaxis determines whether to use the x, y or z of the perlin output for the x
-        axis of the 2D array.
-
-        yaxis determines whether to use the x, y or z of the perlin output for the y
-        axis of the 2D array.
-        """
-
-        xa, ya, za = create_arrays(min_x, max_x, min_y, max_y, z, width, height)
+        xa, ya, za = self.create_arrays(width, height, min_x, max_x, min_y, max_y, min_z, max_z)
 
         value = np.zeros_like(xa, dtype=np.float64)
         curPersistence = 1.0
 
         for i in range(self.octaves):
             seed = (self.seed + i) & 0xffffffff
-            signal = gradient(xa, ya, za, seed, self.quality, xaxis, yaxis)
+            signal = gpu.gradient_noise(xa, ya, za, np.int32(seed), np.int32(self.quality.value))
 
             value = value + (signal * curPersistence)
 
