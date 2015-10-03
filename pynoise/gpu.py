@@ -1,5 +1,6 @@
 import pyopencl as cl
 import numpy as np
+import os
 
 class GPU:
     def __init__(self):
@@ -9,7 +10,9 @@ class GPU:
         self.queue = cl.CommandQueue(self.ctx)
 
     def load_program(self):
-        f = open('pynoise/kernels.cl', 'r')
+        data_path = os.path.dirname(__file__)
+        f = open(os.path.join(data_path, 'kernels.cl'), 'r')
+
         fstr = "".join(f.readlines())
 
         self.program = cl.Program(self.ctx, fstr).build()

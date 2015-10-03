@@ -1,6 +1,9 @@
 from pynoise.noisemodule import *
 import pytest
 
+def within(a, b, epsilon):
+    return abs(a - b) < epsilon
+
 def test_noise_module():
     n = NoiseModule()
 

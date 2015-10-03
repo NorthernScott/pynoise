@@ -1147,17 +1147,17 @@ class Turbulence(NoiseModule):
           return self.source0.get_value(xDistort, yDistort, zDistort)
 
     def get_values(self, width, height, min_x, max_x, min_y, max_y, min_z, max_z=None):
-        x0 = x + (12414.0 / 65536.0)
-        y0 = y + (65124.0 / 65536.0)
-        z0 = z + (31337.0 / 65536.0)
+        x0 = min_x + (12414.0 / 65536.0)
+        y0 = min_y + (65124.0 / 65536.0)
+        z0 = min_z + (31337.0 / 65536.0)
 
-        x1 = x + (26519.0 / 65536.0)
-        y1 = y + (18128.0 / 65536.0)
-        z1 = z + (60493.0 / 65536.0)
+        x1 = min_x + (26519.0 / 65536.0)
+        y1 = min_y + (18128.0 / 65536.0)
+        z1 = min_z + (60493.0 / 65536.0)
 
-        x2 = x + (53820.0 / 65536.0)
-        y2 = y + (11213.0 / 65536.0)
-        z2 = z + (44845.0 / 65536.0)
+        x2 = min_x + (53820.0 / 65536.0)
+        y2 = min_y + (11213.0 / 65536.0)
+        z2 = min_z + (44845.0 / 65536.0)
 
         xa = self.xdm.get_values(self, min_x+x0, max_x+x0, min_y+y0, max_y+y0, z+z0, width, height, xaxis, yaxis)
         ya = self.ydm.get_values(self, min_x+x1, max_x+x1, min_y+y1, max_y+y1, z+z1, width, height, xaxis, yaxis)
