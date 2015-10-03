@@ -149,7 +149,7 @@ class Billow(NoiseModule):
         return value
 
     def get_values(self, width, height, min_x, max_x, min_y, max_y, min_z, max_z=None):
-        xa, ya, za = create_arrays(width, height, min_x, max_x, min_y, max_y, min_z, max_z)
+        xa, ya, za = self.create_arrays(width, height, min_x, max_x, min_y, max_y, min_z, max_z)
 
         value = np.zeros_like(xa)
         curPersistence = 1

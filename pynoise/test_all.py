@@ -1,7 +1,7 @@
 from pynoise.noisemodule import *
 import pytest
 
-def within(a, b, epsilon):
+def within(a, b, epsilon=0.000001):
     return abs(a - b) < epsilon
 
 def test_noise_module():
@@ -40,18 +40,24 @@ def test_add():
 
     assert add0.get_value(0,0,0) == 3
     assert add1.get_value(0,0,0) == 5
-    assert within(add2.get_value(0,0,0), add2.get_values(1,1, 0,0, 0,0, 0,0), 0.000001)
+    assert within(add2.get_value(0,0,0), add2.get_values(1,1, 0,0, 0,0, 0,0))
 
 def test_billow():
     billow = Billow()
+    assert within(billow.get_value(0,0,0), billow.get_values(1,1, 0,0, 0,0, 0,0))
 
 def test_blend():
     const0 = Const(0)
     const1 = Const(1)
 
+    p0 = Perlin()
+    p1 = Perlin(seed=3)
+
     blend = Blend(const0, const1, const0)
+    b1 = Blend(p0, p1, p0)
 
     assert blend.get_value(0,0,0) == 0.5
+    assert within(b1.get_value(0,0,0), b1.get_values(1,1, 0,0, 0,0, 0,0))
 
 def test_checkerboard():
     checkerboard = Checkerboard()
