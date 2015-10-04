@@ -142,8 +142,6 @@ def noise_map_plane_gpu(seamless=False, lower_x=0, upper_x=0, lower_z=0, upper_z
 
         return gpu.linear_interp(z0, z1, z_blend)
 
-
-
 def noise_map_sphere(east_bound=0, west_bound=0, north_bound=0, south_bound=0,
     width=0, height=0, source=None):
     assert east_bound > west_bound
@@ -177,7 +175,7 @@ def noise_map_sphere(east_bound=0, west_bound=0, north_bound=0, south_bound=0,
     return np.flipud(nm)
 
 def noise_map_sphere_gpu(east_bound=0, west_bound=0, north_bound=0, south_bound=0,
-    width=0, height=0, xaxis='x', yaxis='z', source=None):
+    width=0, height=0, source=None):
 
     longs = np.radians(np.linspace(south_bound, north_bound, width*height))
     lats = np.radians(np.linspace(west_bound, east_bound, width*height))

@@ -3,6 +3,7 @@ from setuptools import setup
 setup(
     name = 'pynoise',
     include_package_data=True,
+    packages = ['pynoise'],
     platforms='any',
     version = '2.1.0a6',
     description = 'An implementation of libnoise in python. Allows the creation of verious noise maps using a series of interconnected noise modules.',

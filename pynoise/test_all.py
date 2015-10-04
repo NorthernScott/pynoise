@@ -1,4 +1,5 @@
 from pynoise.noisemodule import *
+from pynoise.noiseutil import *
 import pytest
 
 def within(a, b, epsilon=0.000001):
@@ -297,3 +298,9 @@ def test_linear_interp():
     assert abs(linear_interp(0.3, 1, 0.19) - 0.433) <= 0.000001
     assert abs(linear_interp(0.4, 1, 0.29) - 0.574) <= 0.000001
     assert abs(linear_interp(0.5, 1, 0.15) - 0.575) <= 0.000001
+
+def test_noise_map_sphere_gpu():
+    p = Perlin()
+    t = Turbulence(p)
+    noise_map_sphere_gpu(east_bound=180, west_bound=-180,
+    north_bound=1200, south_bound=-1200, width=512, height=256, source=t)

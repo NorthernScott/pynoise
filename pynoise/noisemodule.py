@@ -1149,16 +1149,16 @@ class Turbulence(NoiseModule):
         z2 = min_z + (44845.0 / 65536.0)
 
         xa = self.xdm.get_values(width, height, min_x+x0, max_x+x0, min_y+y0, max_y+y0, min_z+z0, max_z+z0)
-        ya = self.ydm.get_values(width, height, min_x+x1, max_x+x1, min_y+y1, max_y+y1, min_z+z1, max_z+z0)
-        za = self.zdm.get_values(width, height, min_x+x2, max_x+x2, min_y+y2, max_y+y2, min_z+z2, max_z+z0)
+        ya = self.ydm.get_values(width, height, min_x+x1, max_x+x1, min_y+y1, max_y+y1, min_z+z1, max_z+z1)
+        za = self.zdm.get_values(width, height, min_x+x2, max_x+x2, min_y+y2, max_y+y2, min_z+z2, max_z+z2)
 
         xa *= self.power
         ya *= self.power
         za *= self.power
 
-        xa += min_x
-        ya += min_y
-        za += min_z
+        xa = np.amin(xa)
+        ya = np.amin(ya)
+        za = np.amin(za)
 
         return self.source0.get_values(width, height, min_x+xa, max_x+xa, min_y+ya, max_y+ya, min_z+za, max_z+za)
 
