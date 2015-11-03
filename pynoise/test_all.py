@@ -5,6 +5,9 @@ import pytest
 def within(a, b, epsilon=0.000001):
     return abs(a - b) < epsilon
 
+def check_self(mod):
+    assert within(mod.get_value(0,0,0), mod.get_values(1,1, 0,0, 0,0, 0,0))
+
 def test_noise_module():
     n = NoiseModule()
 
@@ -15,6 +18,7 @@ def test_const():
     const = Const(1)
 
     assert const.get_value(0,0,0) == 1
+    assert within(const.get_value(0,0,0), const.get_values(1,1, 0,0, 0,0, 0,0))
 
 def test_abs():
     const0 = Const(-1)
@@ -25,6 +29,9 @@ def test_abs():
 
     assert abs0.get_value(0,0,0) == 1
     assert abs1.get_value(0,0,0) == 1
+
+    check_self(abs0)
+    check_self(abs1)
 
 def test_add():
     const0 = Const(1)
@@ -41,11 +48,13 @@ def test_add():
 
     assert add0.get_value(0,0,0) == 3
     assert add1.get_value(0,0,0) == 5
-    assert within(add2.get_value(0,0,0), add2.get_values(1,1, 0,0, 0,0, 0,0))
+
+    check_self(add0)
+    check_self(add1)
 
 def test_billow():
     billow = Billow()
-    assert within(billow.get_value(0,0,0), billow.get_values(1,1, 0,0, 0,0, 0,0))
+    check_self(billow)
 
 def test_blend():
     const0 = Const(0)
@@ -58,12 +67,15 @@ def test_blend():
     b1 = Blend(p0, p1, p0)
 
     assert blend.get_value(0,0,0) == 0.5
-    assert within(b1.get_value(0,0,0), b1.get_values(1,1, 0,0, 0,0, 0,0))
+
+    check_self(b1)
+    check_self(blend)
 
 def test_checkerboard():
     checkerboard = Checkerboard()
     checkerboard.get_value(0,0,0)
     checkerboard.get_value(1.51,1.51,1.51)
+    check_self(checkerboard)
 
 def test_clamp():
     const0 = Const(0.75)
@@ -75,26 +87,29 @@ def test_clamp():
     assert clamp0.get_value(0,0,0) == 0.5
     assert clamp1.get_value(0,0,0) == 0.8
     assert clamp2.get_value(0,0,0) == 0.75
+    check_self(clamp0)
+    check_self(clamp1)
+    check_self(clamp2)
 
 def test_curve():
     const0 = Const(1)
     points = [(0.1, 0.2), (0.2, 0.3), (0.3, 0.4), (0.4, 0.5)]
     curve = Curve(const0, points=points)
-    curve.get_value(0,0,0)
+    check_self(curve)
 
     curve1 = Curve(const0)
     curve1.add_control_point(0.1, 0.2)
     curve1.add_control_point(0.2, 0.3)
     curve1.add_control_point(0.3, 0.4)
     curve1.add_control_point(0.4, 0.5)
-    curve1.get_value(0,0,0)
+    check_self(curve1)
 
     curve1.clear_control_points()
     curve1.add_control_point(0.1, 0.2)
     curve1.add_control_point(0.2, 0.3)
     curve1.add_control_point(0.3, 0.4)
     curve1.add_control_point(0.4, 0.5)
-    curve1.get_value(0,0,0)
+    check_self(curve1)
 
     const1 = Const(0)
     curve2 = Curve(const1)
@@ -102,12 +117,14 @@ def test_curve():
     curve2.add_control_point(0.2, 0.3)
     curve2.add_control_point(0.3, 0.4)
     curve2.add_control_point(0.4, 0.5)
-    curve2.get_value(0,0,0)
+    check_self(curve2)
 
 def test_cylinders():
     cylinders = Cylinders()
     cylinders1 = Cylinders(frequency=4)
     assert cylinders1.get_value(0,0,0) == cylinders.get_value(0,0,0)
+    check_self(cylinders)
+    check_self(cylinders1)
 
 def test_displace():
     c0 = Const(0)
@@ -116,6 +133,7 @@ def test_displace():
     displace = Displace(c0, c0, c0, b1)
 
     assert b1.get_value(0,0,0) == displace.get_value(0,0,0)
+    check_self(displace)
 
 def test_exponent():
     c0 = Const(-1)
@@ -130,6 +148,10 @@ def test_exponent():
     assert e1.get_value(0,0,0) == 0.125
     assert e2.get_value(0,0,0) == 1
 
+    check_self(e0)
+    check_self(e1)
+    check_self(e2)
+
 def test_invert():
     c0 = Const(-1)
     c1 = Const(1)
@@ -139,6 +161,9 @@ def test_invert():
 
     assert i0.get_value(0,0,0) == 1
     assert i1.get_value(0,0,0) == -1
+
+    check_self(i0)
+    check_self(i1)
 
 def test_max():
     c0 = Const(1)
@@ -151,6 +176,9 @@ def test_max():
     assert m0.get_value(0,0,0) == 2
     assert m1.get_value(0,0,0) == 3
 
+    check_self(m0)
+    check_self(m1)
+
 def test_min():
     c0 = Const(1)
     c1 = Const(2)
@@ -162,15 +190,22 @@ def test_min():
     assert m0.get_value(0,0,0) == 1
     assert m1.get_value(0,0,0) == 2
 
+    check_self(m0)
+    check_self(m1)
+
 def test_multiply():
     c0 = Const(2)
 
     m0 = Multiply(c0, c0)
     assert m0.get_value(0,0,0) == 4
 
+    check_self(m0)
+
 def test_perlin():
     perlin = Perlin()
     perlin.get_value(0,0,0)
+
+    check_self(perlin)
 
 def test_power():
     c0 = Const(-1)
@@ -185,6 +220,10 @@ def test_power():
     assert p2.get_value(0,0,0) == 0.25
     assert p3.get_value(0,0,0) == 4
 
+    check_self(p3)
+    check_self(p1)
+    check_self(p2)
+
 def test_ridged():
     r0 = RidgedMulti()
     r0.get_value(0,0,0)
@@ -195,11 +234,17 @@ def test_ridged():
     r2 = RidgedMulti(gain=-100, octaves=30)
     r2.get_value(0,0,0)
 
+    check_self(r0)
+    check_self(r1)
+    check_self(r2)
+
 def test_rotate():
     c0 = Const(1)
 
     r0 = RotatePoint(c0)
     r0.get_value(0,0,0)
+
+    check_self(r0)
 
 def test_scalebias():
     c0 = Const(2)
@@ -210,11 +255,16 @@ def test_scalebias():
     assert s0.get_value(0,0,0) == 4.5
     assert s1.get_value(0,0,0) == 5
 
+    check_self(s0)
+    check_self(s1)
+
 def test_scalepoint():
     c0 = Const(2)
 
     s0 = ScalePoint(c0)
     s0.get_value(0,0,0)
+
+    check_self(s0)
 
 def test_select():
     c0 = Const(0)
@@ -243,10 +293,20 @@ def test_select():
     s6 = Select(c0,c1,c5, edge_falloff=0.5)
     s6.get_value(0,0,0)
 
+    check_self(s0)
+    check_self(s1)
+    check_self(s2)
+    check_self(s3)
+    check_self(s4)
+    check_self(s5)
+
 def test_spheres():
     s0 = Spheres()
     s1 = Spheres(frequency=10)
     assert s0.get_value(0,0,0) == s1.get_value(0,0,0)
+
+    check_self(s0)
+    check_self(s1)
 
 def test_terrace():
     c0 = Const(0)
@@ -260,10 +320,16 @@ def test_terrace():
     t2 = Terrace(c0, control_points=[-1,-0.5, 0, 0.5, 1], invert_terraces=True)
     t2.get_value(0,0,0)
 
+    check_self(t0)
+    check_self(t1)
+    check_self(t2)
+
 def test_translatepoint():
     c0 = Const(.1)
     tp = TranslatePoint(c0)
     tp.get_value(0,0,0)
+
+    check_self(tp)
 
 def test_turbulence():
     c0 = Const(1)
@@ -273,7 +339,7 @@ def test_turbulence():
     t1 = Turbulence(p0)
 
     t0.get_value(0,0,0)
-    assert within(t1.get_value(0,0,0), t1.get_values(1,1, 0,0, 0,0, 0,0))
+    check_self(t1)
 
 def test_voronoi():
     v = Voronoi()
@@ -281,6 +347,9 @@ def test_voronoi():
 
     v1 = Voronoi(enable_distance=True)
     v1.get_value(0,0,0)
+
+    check_self(v)
+    check_self(v1)
 
 def test_util_clamp():
     assert clamp(1,0,2) == 1

@@ -265,13 +265,12 @@ class RenderImage():
         else:
             return intensity
 
-    def render(self, noisemap, image_name, gradient):
-        height, width = noisemap.shape
+    def render(self, width, height, noisemap, image_name, gradient):
         img = Image.new('RGB', (width, height), '#ffffff')
 
         for y in range(height):
             for x in range(width):
-                dest_color = gradient.get_color(noisemap[y][x])
+                dest_color = gradient.get_color(noisemap[y*x])
 
                 light_intensity = 1
 

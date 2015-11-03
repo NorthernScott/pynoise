@@ -201,14 +201,13 @@ __kernel void cylinders(__global double *x, __global double *z, __global double 
 }
 
 __kernel void spheres(__global double *x, __global double *y, __global double *z,
-    __global *dest) {
+    __global double *dest) {
   unsigned int i = get_global_id(0);
 
-  double center = sqrt(x[i]*x[i] + y[i] * y[i] + z[i]*z[i])  ;
+  double center = sqrt(x[i]*x[i] + y[i] * y[i] + z[i]*z[i]);
   double small = center - floor(center);
   double large = 1 - small;
-  double nearest = fmin(large, small);
-
+  double nearest = fmin(small, large);
   dest[i] = 1 - (nearest*4);
 }
 
