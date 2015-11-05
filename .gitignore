@@ -6,9 +6,9 @@ test.*
 _*/
 Makefile
 MANIFEST
-conf.py
 dist/
 .coverage
 doc/build/
 *.png
 pynoise.egg-info/*
+.cache/
