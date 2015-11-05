@@ -12,3 +12,4 @@ doc/build/
 *.png
 pynoise.egg-info/*
 .cache/
+build/

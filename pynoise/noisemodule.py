@@ -53,9 +53,8 @@ class Abs(NoiseModule):
     """
     Returns the absolute value of the given source module.
 
-    :param source0: The module that Abs will apply to.
-    :type source0: NoiseModule
-
+    Args:
+        source0 (NoiseModule): The module that Abs will apply to.
     """
     def __init__(self, source0):
         self.source0 = source0
@@ -71,7 +70,13 @@ class Abs(NoiseModule):
         return np.absolute(self.source0.get_values(width, height, min_x, max_x, min_y, max_y, min_z, max_z ))
 
 class Add(NoiseModule):
-    """ Adds the two given source modules together. """
+    """ Adds the two given source modules together.
+
+        Args:
+            source0 (NoiseModule): The NoiseModule to be added to source1
+            source1 (NoiseModule): The NoiseModule to be added to soruce0
+
+    """
     def __init__(self, source0, source1):
         self.source0 = source0
         self.source1 = source1
@@ -95,6 +100,17 @@ class Billow(NoiseModule):
     """ Noise function that is more suitable for items like clouds or rocks.
     This module is nearly identical to Perlin noise, however each octave has
     the absolute value taken from the signal.
+
+    Args:
+        frequency (float): The frequency of the first octave. Default 1.
+        lacunarity (float): Lacunarity is the frequency multiplier between
+            successive octaves. For best results set to between 1.5 and 3.5.
+            The default is 2.
+        quality (Quality): How accuratly the noise is calculated. Higher
+            Qualities is slower. Default is Quality.std
+        octaves (int): The number of octaves controls the amount of detail in
+            the noise. The default is 6.
+        seed (int): The seed value for the noise. The default is 0.
     """
     def __init__(self, frequency=1, lacunarity=2, quality=Quality.std,
         octaves=6, persistence=0.5, seed=0):
@@ -161,6 +177,11 @@ class Billow(NoiseModule):
 class Blend(NoiseModule):
     """ Blends source0 and source1 by performing a linear interpolation with
     source2 acting as the alpha
+
+    Args:
+        source0 (NoiseModule): The first of two sources to be blended.
+        source1 (NoiseModule): The second of two sources to be blended.
+        source2 (NoiseModule): The alpha value of the linear interpolation.
     """
     def __init__(self, source0, source1, source2):
         self.source0 = source0
@@ -191,6 +212,10 @@ class Blend(NoiseModule):
         return gpu.linear_interp(v0, v1, alpha)
 
 class Checkerboard(NoiseModule):
+    """
+    Outputs a checkerboard patterned noise.
+    """
+
     def _checker(self, ix, iy, iz):
         if ((int(ix) & 1 ^ int(iy) & 1 ^ int(iz) & 1) != 0):
             return -1
@@ -217,8 +242,15 @@ class Checkerboard(NoiseModule):
         return rv
 
 class Clamp():
-    """ Clamps a source between lower_bound and upper_bound.
-    lower_bound is defaulted to -1 and upper_bound defaults to 1.
+    """
+    Clamps a source between two values
+
+    Args:
+        source0 (NoiseModule): The source whose output is to be clamped.
+        lower_bound (float): The lower bound of the clamp. Values lower than
+            this are set to lower_bound. The default is -1.
+        upper_bound (float): The upper bound of the clamp. Values higher than
+            this are set to upper_bound. The default is 1.
     """
     def __init__(self, source0, lower_bound=-1, upper_bound=1):
         self.lower_bound = lower_bound
@@ -245,6 +277,13 @@ class Clamp():
         return np.clip(v, self.lower_bound, self.upper_bound)
 
 class Const(NoiseModule):
+    """
+    Outputs a constant value.
+
+    Args:
+        const (float): The output value of this module.
+    """
+
     def __init__(self, const):
         self.const = const
 
@@ -255,11 +294,17 @@ class Const(NoiseModule):
         return (np.ones(width*height) * self.const)
 
 class Curve(NoiseModule):
-    """ Maps the output of source0 to a cubic spline.
-    points is a list of tuples that specify input and outputs.
-    Example: [(0, 0.1), (0.1,0.2),...]
+    """
+    Maps the output of source0 to an arbitrary curve. This curve is defined
+    by a list of given points, given as (input, output). The input module is
+    then cubically interpolated against this curve.
 
-    A minimum of 4 points must be added.
+    Args:
+        source0 (NoiseModule): The source to be matched against the curve.
+        points ([(float, float)]): A list of tuples that specify the inputs
+            and outputs of the defined curve.
+            Example: points = [(0, 0.1), (0.1,0.2),...]
+            A minimum of 4 points must be added.
     """
     def __init__(self, source0, points=None):
         self.control_points = SortedDict()
@@ -348,8 +393,11 @@ class Curve(NoiseModule):
 
 class Cylinders(NoiseModule):
     """ Outputs a series of concentric cyliners centered around 0,y,0.
-    There is a new cylinder every `frequency` lengths from origin. Default
-    frequency is 1.
+    There is a new cylinder every `frequency` lengths from origin.
+
+    Args:
+        frequency (float): The frequency of a new concentric cylinder. Default
+            is 1.
     """
     def __init__(self, frequency=1):
         self.frequency = frequency
@@ -373,8 +421,13 @@ class Cylinders(NoiseModule):
 
 class Displace(NoiseModule):
     """ Displaces source3 output by the outputs of source0, source1, and source2.
-    source0 adjusts the x values. source1 adjusts the y value and source2 adjusts
-    the z value.
+
+    Args:
+        source0 (NoiseModule): Controls the shift in x of source3.
+        source1 (NoiseModule): Controls the shift in y of source3.
+        source2 (NoiseModule): Controls the shift in z of source3.
+        source3 (NoiseModule): The module whose output is shifted by source0,
+            source1 and souce2.
     """
     def __init__(self, source0, source1, source2, source3):
         self.source0 = source0

@@ -29,36 +29,36 @@ Features
 
   * Base noise modules:
 
-    * Perlin
-    * Ridged Multi-Fractal
-    * Voronoi
-    * Sphere
-    * Cylinders
-    * Checkerboard
-    * Billow
-    * Const
+    * :py:class:`Perlin <pynoise.noisemodule.Perlin>`
+    * :py:class:`Ridged Multi-Fractal <pynoise.noisemodule.RidgedMulti>`
+    * :py:class:`Voronoi <pynoise.noisemodule.Voronoi>`
+    * :py:class:`Sphere <pynoise.noisemodule.Spheres>`
+    * :py:class:`Cylinders <pynoise.noisemodule.Cylinders>`
+    * :py:class:`Checkerboard <pynoise.noisemodule.Checkerboard>`
+    * :py:class:`Billow <pynoise.noisemodule.Billow>`
+    * :py:class:`Const <pynoise.noisemodule.Const>`
 
   * Noise module modifiers:
 
-    * Abs
-    * Add
-    * Blend
-    * Clamp
-    * Curve
-    * Displace
-    * Exponent
-    * Invert
-    * Max
-    * Min
-    * Multiply
-    * Power
-    * RotatePoint
-    * ScaleBias
-    * ScalePoint
-    * Select
-    * Terrace
-    * TranslatePoint
-    * Turbulence
+    * :py:class:`Abs <pynoise.noisemodule.Abs>`
+    * :py:class:`Add <pynoise.noisemodule.Add>`
+    * :py:class:`Blend <pynoise.noisemodule.Blend>`
+    * :py:class:`Clamp <pynoise.noisemodule.Clamp>`
+    * :py:class:`Curve <pynoise.noisemodule.Curve>`
+    * :py:class:`Displace <pynoise.noisemodule.Displace>`
+    * :py:class:`Exponent <pynoise.noisemodule.Exponent>`
+    * :py:class:`Invert <pynoise.noisemodule.Invert>`
+    * :py:class:`Max <pynoise.noisemodule.Max>`
+    * :py:class:`Min <pynoise.noisemodule.Min>`
+    * :py:class:`Multiply <pynoise.noisemodule.Multiply>`
+    * :py:class:`Power <pynoise.noisemodule.Power>`
+    * :py:class:`RotatePoint <pynoise.noisemodule.RotatePoint>`
+    * :py:class:`ScaleBias <pynoise.noisemodule.ScaleBias>`
+    * :py:class:`ScalePoint <pynoise.noisemodule.ScalePoint>`
+    * :py:class:`Select <pynoise.noisemodule.Select>`
+    * :py:class:`Terrace <pynoise.noisemodule.Terrace>`
+    * :py:class:`TranslatePoint <pynoise.noisemodule.TranslatePoint>`
+    * :py:class:`Turbulence <pynoise.noisemodule.Turbulence>`
 
 Installation
 ------------
@@ -83,16 +83,9 @@ License
 
 This is licensed under MPL 2.0
 
-Contents:
+Tutorials
+---------
 
-.. toctree::
-   :maxdepth: 2
-
-
-
-Indices and tables
-==================
-
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`
+ :doc:`tutorial1`
+ 
+ :doc:`tutorial2`

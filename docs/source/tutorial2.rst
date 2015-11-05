@@ -1,5 +1,5 @@
-Tutorial 2:
-===========
+Tutorial 2: Basic Coherent Noise
+================================
 
 What is coherent noise?
 -----------------------
