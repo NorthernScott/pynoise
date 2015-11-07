@@ -45,8 +45,8 @@ class GradientColor():
 
         return linear_interp_color(c0, c1, alpha)
 
-def noise_map_cylinder(lower_angle=0, upper_angle=0, lower_height=0, upper_height=0,
-    width=0, height=0, source=None):
+def noise_map_cylinder(width=0, height=0, lower_angle=0, upper_angle=0,
+    lower_height=0, upper_height=0, source=None):
     assert lower_angle < upper_angle
     assert lower_height < upper_height
     assert width > 0
@@ -74,8 +74,8 @@ def noise_map_cylinder(lower_angle=0, upper_angle=0, lower_height=0, upper_heigh
 
     return np.flipud(nm)
 
-def noise_map_plane(seamless=False, lower_x=0, upper_x=0, lower_z=0, upper_z=0,
-    width=0, height=0, source=None):
+def noise_map_plane(width=0, height=0, lower_x=0, upper_x=0, lower_z=0, upper_z=0,
+    source=None, seamless=False):
     assert lower_x < upper_x
     assert lower_z < upper_z
     assert width > 0
@@ -97,7 +97,6 @@ def noise_map_plane(seamless=False, lower_x=0, upper_x=0, lower_z=0, upper_z=0,
         for z in range(height):
             if not seamless:
                 nm[i] = source.get_value(x_cur, 0, z_cur)
-                i += 1
             else:
                 sw = source.get_value(xCur, 0, zCur)
                 se = source.get_value(xCur+x_extent, 0, zCur)
@@ -110,13 +109,15 @@ def noise_map_plane(seamless=False, lower_x=0, upper_x=0, lower_z=0, upper_z=0,
                 z0 = linear_interp(sw, se, x_blend)
                 z1 = linear_interp(nw, ne, x_blend)
                 nm[i] = linear_interp(z0, z1, z_blend)
+
             x_cur += x_delta
+            i += 1
         z_cur += z_delta
 
     return nm
 
-def noise_map_plane_gpu(seamless=False, lower_x=0, upper_x=0, lower_z=0, upper_z=0,
-    width=0, height=0, source=None, xaxis='x', yaxis='z'):
+def noise_map_plane_gpu(width=0, height=0, lower_x=0, upper_x=0, lower_z=0, upper_z=0,
+    source=None, seamless=False):
     assert lower_x < upper_x
     assert lower_z < upper_z
     assert width > 0
@@ -124,15 +125,15 @@ def noise_map_plane_gpu(seamless=False, lower_x=0, upper_x=0, lower_z=0, upper_z
     assert source is not None
 
     if not seamless:
-        return source.get_values(lower_x, upper_x, lower_z, upper_z, 0, width, height, xaxis, yaxis)
+        return source.get_values(width, height, lower_x, upper_x, 0, 0, lower_z, upper_z)
     else:
         x_extent = upper_x - lower_x
         z_extent = upper_z - lower_z
 
-        se = source.get_values(lower_x+x_extent, upper_x+x_extent, lower_z, upper_z, 0, width, height, xaxis, yaxis)
-        sw = source.get_values(lower_x, upper_x, lower_z, upper_z, 0, width, height, xaxis, yaxis)
-        nw = source.get_values(lower_x, upper_x, lower_z+z_extent, upper_z+z_extent, 0, width, height, xaxis, yaxis)
-        ne = source.get_values(lower_x+x_extent, upper_x+x_extent, lower_z+z_extent, upper_z+z_extent, 0, width, height, xaxis, yaxis)
+        se = source.get_values(width, height, lower_x+x_extent, upper_x+x_extent, lower_z, upper_z, 0)
+        sw = source.get_values(width, height, lower_x, upper_x, lower_z, upper_z, 0)
+        nw = source.get_values(width, height, lower_x, upper_x, lower_z+z_extent, upper_z+z_extent, 0)
+        ne = source.get_values(width, height, lower_x+x_extent, upper_x+x_extent, lower_z+z_extent, upper_z+z_extent, 0)
 
         x_blend = 1 - ((np.linspace(lower_x, upper_x, width*height)) / x_extent)
         z_blend = 1 - ((np.linspace(lower_z, upper_z, width*height)) / z_extent)
@@ -142,15 +143,15 @@ def noise_map_plane_gpu(seamless=False, lower_x=0, upper_x=0, lower_z=0, upper_z
 
         return gpu.linear_interp(z0, z1, z_blend)
 
-def noise_map_sphere(east_bound=0, west_bound=0, north_bound=0, south_bound=0,
-    width=0, height=0, source=None):
+def noise_map_sphere(width=0, height=0, east_bound=0, west_bound=0,
+    north_bound=0, south_bound=0, source=None):
     assert east_bound > west_bound
     assert north_bound > south_bound
     assert width > 0
     assert height > 0
     assert source is not None
 
-    nm = np.zeros((height, width))
+    nm = np.zeros(height*width)
 
     lon_extent = east_bound - west_bound
     lat_extent = north_bound - south_bound
@@ -158,6 +159,8 @@ def noise_map_sphere(east_bound=0, west_bound=0, north_bound=0, south_bound=0,
     y_delta = lat_extent / height
     cur_lon = west_bound
     cur_lat = south_bound
+
+    i = 0
 
     for y in range(height):
         cur_lon = west_bound
@@ -167,26 +170,69 @@ def noise_map_sphere(east_bound=0, west_bound=0, north_bound=0, south_bound=0,
             ya = math.sin(math.radians(cur_lat))
             za = r * math.sin(math.radians(cur_lon))
 
-            nm[y][x] = source.get_value(xa, ya, za)
+            nm[i] = source.get_value(xa, ya, za)
 
             cur_lon += x_delta
+            i += 1
         cur_lat += y_delta
 
-    return np.flipud(nm)
+    return nm
 
-def noise_map_sphere_gpu(east_bound=0, west_bound=0, north_bound=0, south_bound=0,
-    width=0, height=0, source=None):
+def noise_map_sphere_gpu(width=0, height=0, east_bound=0, west_bound=0,
+    north_bound=0, south_bound=0, source=None):
+
+    lats = np.radians(np.linspace(south_bound, north_bound, height))
+    longs = np.radians(np.linspace(west_bound, east_bound, width))
+
+    longs = np.tile(longs, height)
+    lats = np.repeat(lats, width)
+
+    r = np.cos(lats)
+    xa = r * np.cos(longs)
+    ya = np.sin(lats)
+    za = r * np.sin(longs)
+
+    return source.get_values(width, height, 0,0, 0,0, 0,0, use_arrays=[xa,ya,za])
+
+def smap(width=0, height=0, east_bound=0, west_bound=0,
+    north_bound=0, south_bound=0, source=None):
 
     longs = np.radians(np.linspace(south_bound, north_bound, width*height))
     lats = np.radians(np.linspace(west_bound, east_bound, width*height))
 
     r = np.cos(lats)
-    xa = r * np.cos(longs)
-    ya = r * np.sin(lats)
-    za = r * np.sin(longs)
+    xam = r * np.cos(longs)
+    yam = r * np.sin(lats)
+    zam = r * np.sin(longs)
 
-    return source.get_values(width, height, np.amin(xa), np.amax(xa),
-        np.amin(ya), np.amax(ya), np.amin(za), np.amax(za))
+    nm = np.zeros(height*width)
+
+    lon_extent = east_bound - west_bound
+    lat_extent = north_bound - south_bound
+    x_delta = lon_extent / width
+    y_delta = lat_extent / height
+    cur_lon = west_bound
+    cur_lat = south_bound
+
+    i = 0
+
+    for y in range(height):
+        cur_lon = west_bound
+        for x in range(width):
+            r = math.cos(math.radians(cur_lat))
+            xa = r * math.cos(math.radians(cur_lon))
+            ya = math.sin(math.radians(cur_lat))
+            za = r * math.sin(math.radians(cur_lon))
+
+            assert xa == xam[i]
+            assert ya == yam[i]
+            assert za == zam[i]
+
+            cur_lon += x_delta
+            i += 1
+        cur_lat += y_delta
+
+
 
 def grayscale_gradient():
     grad = GradientColor()
@@ -267,10 +313,12 @@ class RenderImage():
 
     def render(self, width, height, noisemap, image_name, gradient):
         img = Image.new('RGB', (width, height), '#ffffff')
+        i = 0
 
         for y in range(height):
             for x in range(width):
-                dest_color = gradient.get_color(noisemap[y*x])
+                dest_color = gradient.get_color(noisemap[i])
+                i += 1
 
                 light_intensity = 1
 
@@ -335,23 +383,3 @@ class RenderImage():
                 t = color.get_upscaled_value_tuple()
                 img.putpixel((x,y), (t[0], t[1], t[2]))
         img.save(image_name, 'PNG')
-
-    def render_numpy(self, noisemap, width, height, name, gradient):
-        img = Image.new('RGB', (width, height), '#ffffff')
-        i = 0
-
-        for x in range(width):
-            for y in range(height):
-                dest_color = (gradient.get_color(noisemap[i]))
-
-                light_intensity = 1
-
-                if self.light_enabled:
-                    print('enabled')
-
-                bg_color = sRGBColor(1,1,1)
-                color = self.calc_dest_color(dest_color, bg_color, light_intensity)
-                t = color.get_upscaled_value_tuple()
-                img.putpixel((x,y), (t[0], t[1], t[2]))
-                i += 1
-        img.save(name, 'PNG')

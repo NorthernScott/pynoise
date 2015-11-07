@@ -26,7 +26,7 @@ gpu.load_program()
 class NoiseModule():
     frequency = 1
 
-    def create_arrays(self, width, height, min_x, max_x, min_y, max_y, min_z, max_z=None):
+    def create_arrays(self, width, height, min_x, max_x, min_y, max_y, min_z, max_z=None, use_arrays=None):
         xa = np.linspace(min_x, max_x, width, dtype=np.float64)
         xa = np.tile(xa, height)
         xa *= self.frequency
@@ -46,7 +46,7 @@ class NoiseModule():
     def get_value(self, x, y, z):
         raise NotImplementedError('Not Implemented.')
 
-    def get_values(self, width, height, min_x, max_x, min_y, max_y, min_z, max_z=None):
+    def get_values(self, width, height, min_x, max_x, min_y, max_y, min_z, max_z=None, use_arrays=None):
         raise NotImplementedError('Not Implemented.')
 
 class Abs(NoiseModule):
@@ -64,10 +64,10 @@ class Abs(NoiseModule):
 
         return abs(self.source0.get_value(x, y, z))
 
-    def get_values(self, width, height, min_x, max_x, min_y, max_y, min_z, max_z=None):
+    def get_values(self, width, height, min_x, max_x, min_y, max_y, min_z, max_z=None, use_arrays=None):
         assert self.source0 is not None
 
-        return np.absolute(self.source0.get_values(width, height, min_x, max_x, min_y, max_y, min_z, max_z ))
+        return np.absolute(self.source0.get_values(width, height, min_x, max_x, min_y, max_y, min_z, max_z, use_arrays))
 
 class Add(NoiseModule):
     """ Adds the two given source modules together.
@@ -87,12 +87,12 @@ class Add(NoiseModule):
 
         return self.source0.get_value(x, y, z) + self.source1.get_value(x, y, z)
 
-    def get_values(self, width, height, min_x, max_x, min_y, max_y, min_z, max_z=None):
+    def get_values(self, width, height, min_x, max_x, min_y, max_y, min_z, max_z=None, use_arrays=None):
         assert self.source0 is not None
         assert self.source1 is not None
 
-        a = self.source0.get_values(width, height, min_x, max_x, min_y, max_y,min_z, max_z)
-        b = self.source1.get_values(width, height, min_x, max_x, min_y, max_y, min_z, max_z)
+        a = self.source0.get_values(width, height, min_x, max_x, min_y, max_y,min_z, max_z, use_arrays)
+        b = self.source1.get_values(width, height, min_x, max_x, min_y, max_y, min_z, max_z, use_arrays)
 
         return np.add(a, b)
 
@@ -149,8 +149,11 @@ class Billow(NoiseModule):
 
         return value
 
-    def get_values(self, width, height, min_x, max_x, min_y, max_y, min_z, max_z=None):
-        xa, ya, za = self.create_arrays(width, height, min_x, max_x, min_y, max_y, min_z, max_z)
+    def get_values(self, width, height, min_x, max_x, min_y, max_y, min_z, max_z=None, use_arrays=None):
+        if use_arrays is None:
+            xa, ya, za = self.create_arrays(width, height, min_x, max_x, min_y, max_y, min_z, max_z)
+        else:
+            xa, ya, za = use_arrays[0], use_arrays[1], use_arrays[2]
 
         value = np.zeros_like(xa)
         curPersistence = 1
@@ -200,14 +203,14 @@ class Blend(NoiseModule):
 
         return linear_interp(v0, v1, alpha)
 
-    def get_values(self, width, height, min_x, max_x, min_y, max_y, min_z, max_z=None):
+    def get_values(self, width, height, min_x, max_x, min_y, max_y, min_z, max_z=None, use_arrays=None):
         assert self.source0 is not None
         assert self.source1 is not None
         assert self.source2 is not None
 
-        v0 = self.source0.get_values(width, height, min_x, max_x, min_y, max_y, min_z, max_z)
-        v1 = self.source1.get_values(width, height, min_x, max_x, min_y, max_y, min_z, max_z)
-        alpha = (self.source2.get_values(width, height, min_x, max_x, min_y, max_y, min_z, max_z) + 1) / 2
+        v0 = self.source0.get_values(width, height, min_x, max_x, min_y, max_y, min_z, max_z, use_arrays)
+        v1 = self.source1.get_values(width, height, min_x, max_x, min_y, max_y, min_z, max_z, use_arrays)
+        alpha = (self.source2.get_values(width, height, min_x, max_x, min_y, max_y, min_z, max_z, use_arrays) + 1) / 2
 
         return gpu.linear_interp(v0, v1, alpha)
 
@@ -230,8 +233,11 @@ class Checkerboard(NoiseModule):
 
         return self._checker(ix, iy, iz)
 
-    def get_values(self, width, height, min_x, max_x, min_y, max_y, min_z, max_z=None):
-        xa, ya, za = self.create_arrays(width, height, min_x, max_x, min_y, max_y, min_z, max_z)
+    def get_values(self, width, height, min_x, max_x, min_y, max_y, min_z, max_z=None, use_arrays=None):
+        if use_arrays is None:
+            xa, ya, za = self.create_arrays(width, height, min_x, max_x, min_y, max_y, min_z, max_z)
+        else:
+            xa, ya, za = use_arrays[0], use_arrays[1], use_arrays[2]
         rv = np.empty_like(xa)
         it = np.nditer([xa, ya, za, rv], [], [['readonly'], ['readonly'], ['readonly'], ['writeonly']])
 
@@ -270,10 +276,10 @@ class Clamp():
         else:
             return value
 
-    def get_values(self, width, height, min_x, max_x, min_y, max_y, min_z, max_z=None):
+    def get_values(self, width, height, min_x, max_x, min_y, max_y, min_z, max_z=None, use_arrays=None):
         assert self.source0 is not None
 
-        v = self.source0.get_values(width, height, min_x, max_x, min_y, max_y, min_z, max_z)
+        v = self.source0.get_values(width, height, min_x, max_x, min_y, max_y, min_z, max_z, use_arrays)
         return np.clip(v, self.lower_bound, self.upper_bound)
 
 class Const(NoiseModule):
@@ -290,7 +296,7 @@ class Const(NoiseModule):
     def get_value(self, x, y, z):
         return self.const
 
-    def get_values(self, width, height, min_x, max_x, min_y, max_y, min_z, max_z=None):
+    def get_values(self, width, height, min_x, max_x, min_y, max_y, min_z, max_z=None, use_arrays=None):
         return (np.ones(width*height) * self.const)
 
 class Curve(NoiseModule):
@@ -353,11 +359,14 @@ class Curve(NoiseModule):
             alpha
         )
 
-    def get_values(self, width, height, min_x, max_x, min_y, max_y, min_z, max_z=None):
+    def get_values(self, width, height, min_x, max_x, min_y, max_y, min_z, max_z=None, use_arrays=None):
         assert self.source0 is not None
         assert len(self.control_points.keys()) >= 4
 
-        xa, ya, za = self.create_arrays(width, height, min_x, max_x, min_y, max_y, min_z, max_z)
+        if use_arrays is None:
+            xa, ya, za = self.create_arrays(width, height, min_x, max_x, min_y, max_y, min_z, max_z)
+        else:
+            xa, ya, za = use_arrays[0], use_arrays[1], use_arrays[2]
 
         dest = np.empty_like(xa)
 
@@ -414,8 +423,11 @@ class Cylinders(NoiseModule):
 
         return 1.0 - (nearest * 4.0)
 
-    def get_values(self, width, height, min_x, max_x, min_y, max_y, min_z, max_z=None):
-        xa, ya, za = self.create_arrays(width, height, min_x, max_x, min_y, max_y, min_z, max_z)
+    def get_values(self, width, height, min_x, max_x, min_y, max_y, min_z, max_z=None, use_arrays=None):
+        if use_arrays is None:
+            xa, ya, za = self.create_arrays(width, height, min_x, max_x, min_y, max_y, min_z, max_z)
+        else:
+            xa, ya, za = use_arrays[0], use_arrays[1], use_arrays[2]
 
         return gpu.cylinders(xa, za)
 
@@ -448,20 +460,27 @@ class Displace(NoiseModule):
 
         return self.source3.get_value(xD, yD, zD)
 
-    def get_values(self, width, height, min_x, max_x, min_y, max_y, min_z, max_z=None):
+    def get_values(self, width, height, min_x, max_x, min_y, max_y, min_z, max_z=None, use_arrays=None):
         assert(self.source0 is not None)
         assert(self.source1 is not None)
         assert(self.source2 is not None)
         assert(self.source3 is not None)
 
-        xa, ya, za = self.create_arrays(width, height, min_x, max_x, min_y, max_y, min_z, max_z)
+        if use_arrays is None:
+            xa, ya, za = self.create_arrays(width, height, min_x, max_x, min_y, max_y, min_z, max_z)
+        else:
+            xa, ya, za = use_arrays[0], use_arrays[1], use_arrays[2]
 
-        xD = xa + self.source0.get_values(width, height, min_x, max_x, min_y, max_y, min_z, max_z)
-        yD = ya + self.source1.get_values(width, height, min_x, max_x, min_y, max_y, min_z, max_z)
-        zD = za + self.source2.get_values(width, height, min_x, max_x, min_y, max_y, min_z, max_z)
+        xD = xa + self.source0.get_values(width, height, min_x, max_x, min_y, max_y, min_z, max_z, use_arrays)
+        yD = ya + self.source1.get_values(width, height, min_x, max_x, min_y, max_y, min_z, max_z, use_arrays)
+        zD = za + self.source2.get_values(width, height, min_x, max_x, min_y, max_y, min_z, max_z, use_arrays)
 
-        return self.source3.get_values(width, height, min_x + np.amin(xD),
-            max_x + np.amax(xD), min_y + np.amin(yD), max_y + np.amax(yD), min_z + np.amin(zD), max_z + np.amax(zD))
+        if use_arrays is None:
+            return self.source3.get_values(width, height, min_x + np.amin(xD),
+                max_x + np.amax(xD), min_y + np.amin(yD), max_y + np.amax(yD),
+                min_z + np.amin(zD), max_z + np.amax(zD))
+        else:
+            return self.source3.get_values(width, height, 0,0, 0,0, 0,0, [xD,yD,zD])
 
 class Exponent(NoiseModule):
     """  Sets the exponent value to apply to the output value from the
@@ -484,10 +503,10 @@ class Exponent(NoiseModule):
 
         return math.pow(abs((value + 1) / 2), self.exponent) * 2 - 1
 
-    def get_values(self, width, height, min_x, max_x, min_y, max_y, min_z, max_z=None):
+    def get_values(self, width, height, min_x, max_x, min_y, max_y, min_z, max_z=None, use_arrays=None):
         assert self.source0 is not None
 
-        values = self.source0.get_values(width, height, min_x, max_x, min_y, max_y, min_z, max_z)
+        values = self.source0.get_values(width, height, min_x, max_x, min_y, max_y, min_z, max_z, use_arrays)
 
         values += 1
         values /= 2
@@ -508,10 +527,10 @@ class Invert(NoiseModule):
 
         return -(self.source0.get_value(x, y, z))
 
-    def get_values(self, width, height, min_x, max_x, min_y, max_y, min_z, max_z=None):
+    def get_values(self, width, height, min_x, max_x, min_y, max_y, min_z, max_z=None, use_arrays=None):
         assert self.source0 is not None
 
-        v = self.source0.get_values(width, height, min_x, max_x, min_y, max_y, min_z, max_z)
+        v = self.source0.get_values(width, height, min_x, max_x, min_y, max_y, min_z, max_z, use_arrays)
         return v * -1
 
 class Max(NoiseModule):
@@ -529,12 +548,12 @@ class Max(NoiseModule):
 
         return max(v0, v1)
 
-    def get_values(self, width, height, min_x, max_x, min_y, max_y, min_z, max_z=None):
+    def get_values(self, width, height, min_x, max_x, min_y, max_y, min_z, max_z=None, use_arrays=None):
         assert self.source0 is not None
         assert self.source1 is not None
 
-        a = self.source0.get_values(width, height, min_x, max_x, min_y, max_y, min_z, max_z)
-        b = self.source1.get_values(width, height, min_x, max_x, min_y, max_y, min_z, max_z)
+        a = self.source0.get_values(width, height, min_x, max_x, min_y, max_y, min_z, max_z, use_arrays)
+        b = self.source1.get_values(width, height, min_x, max_x, min_y, max_y, min_z, max_z, use_arrays)
 
         return np.maximum(a, b)
 
@@ -553,12 +572,12 @@ class Min(NoiseModule):
 
         return min(v0, v1)
 
-    def get_values(self, width, height, min_x, max_x, min_y, max_y, min_z, max_z=None):
+    def get_values(self, width, height, min_x, max_x, min_y, max_y, min_z, max_z=None, use_arrays=None):
         assert self.source0 is not None
         assert self.source1 is not None
 
-        a = self.source0.get_values(width, height, min_x, max_x, min_y, max_y, min_z, max_z)
-        b = self.source1.get_values(width, height, min_x, max_x, min_y, max_y, min_z, max_z)
+        a = self.source0.get_values(width, height, min_x, max_x, min_y, max_y, min_z, max_z, use_arrays)
+        b = self.source1.get_values(width, height, min_x, max_x, min_y, max_y, min_z, max_z, use_arrays)
 
         return np.minimum(a, b)
 
@@ -575,12 +594,12 @@ class Multiply(NoiseModule):
 
         return self.source0.get_value(x, y, z) * self.source1.get_value(x, y, z)
 
-    def get_values(self, width, height, min_x, max_x, min_y, max_y, min_z, max_z=None):
+    def get_values(self, width, height, min_x, max_x, min_y, max_y, min_z, max_z=None, use_arrays=None):
         assert self.source0 is not None
         assert self.source1 is not None
 
-        a = self.source0.get_values(width, height, min_x, max_x, min_y, max_y, min_z, max_z)
-        b = self.source1.get_values(width, height, min_x, max_x, min_y, max_y, min_z, max_z)
+        a = self.source0.get_values(width, height, min_x, max_x, min_y, max_y, min_z, max_z, use_arrays)
+        b = self.source1.get_values(width, height, min_x, max_x, min_y, max_y, min_z, max_z, use_arrays)
 
         return np.multiply(a, b)
 
@@ -616,9 +635,11 @@ class Perlin(NoiseModule):
 
         return value
 
-    def get_values(self, width, height, min_x, max_x, min_y, max_y, min_z, max_z=None):
-
-        xa, ya, za = self.create_arrays(width, height, min_x, max_x, min_y, max_y, min_z, max_z)
+    def get_values(self, width, height, min_x, max_x, min_y, max_y, min_z, max_z=None, use_arrays=None):
+        if use_arrays is None:
+            xa, ya, za = self.create_arrays(width, height, min_x, max_x, min_y, max_y, min_z, max_z)
+        else:
+            xa, ya, za = use_arrays[0], use_arrays[1], use_arrays[2]
 
         value = np.zeros_like(xa, dtype=np.float64)
         curPersistence = 1.0
@@ -649,12 +670,12 @@ class Power(NoiseModule):
 
         return self.source0.get_value(x,y,z)**self.source1.get_value(x,y,z)
 
-    def get_values(self, width, height, min_x, max_x, min_y, max_y, min_z, max_z=None):
+    def get_values(self, width, height, min_x, max_x, min_y, max_y, min_z, max_z=None, use_arrays=None):
         assert self.source0 is not None
         assert self.source1 is not None
 
-        a = self.source0.get_values(width, height, min_x, max_x, min_y, max_y, min_z, max_z)
-        b = self.source1.get_values(width, height, min_x, max_x, min_y, max_y, min_z, max_z)
+        a = self.source0.get_values(width, height, min_x, max_x, min_y, max_y, min_z, max_z, use_arrays)
+        b = self.source1.get_values(width, height, min_x, max_x, min_y, max_y, min_z, max_z, use_arrays)
 
         return np.power(a, b)
 
@@ -715,8 +736,11 @@ class RidgedMulti(NoiseModule):
 
         return (value * 1.25) - 1
 
-    def get_values(self, width, height, min_x, max_x, min_y, max_y, min_z, max_z=None):
-        xa, ya, za = self.create_arrays(width, height, min_x, max_x, min_y, max_y, min_z, max_z)
+    def get_values(self, width, height, min_x, max_x, min_y, max_y, min_z, max_z=None, use_arrays=None):
+        if use_arrays is None:
+            xa, ya, za = self.create_arrays(width, height, min_x, max_x, min_y, max_y, min_z, max_z)
+        else:
+            xa, ya, za = use_arrays[0], use_arrays[1], use_arrays[2]
         value = np.zeros_like(xa)
         weight = np.ones_like(xa)
 
@@ -779,18 +803,24 @@ class RotatePoint(NoiseModule):
 
         return self.source0.get_value(nx, ny, nz)
 
-    def get_values(self, width, height, min_x, max_x, min_y, max_y, min_z, max_z=None):
+    def get_values(self, width, height, min_x, max_x, min_y, max_y, min_z, max_z=None, use_arrays=None):
         assert self.source0 is not None
 
-        xa, ya, za = self.create_arrays(width, height, min_x, max_x, min_y, max_y, min_z, max_z)
+        if use_arrays is None:
+            xa, ya, za = self.create_arrays(width, height, min_x, max_x, min_y, max_y, min_z, max_z)
+        else:
+            xa, ya, za = use_arrays[0], use_arrays[1], use_arrays[2]
 
         nx = (self.x1a * xa) + (self.y1a * ya) + (self.z1a * za)
         ny = (self.x2a * xa) + (self.y2a * ya) + (self.z2a * za)
         nz = (self.x3a * xa) + (self.y3a * ya) + (self.z3a * za)
 
-        return self.source0.get_values(width, height, min_x + np.amin(nx),
-            max_x + np.amax(nx), min_y + np.amin(ny), max_y + np.amax(ny),
-            min_z + nz[0], max_z + nz[0])
+        if use_arrays is None:
+            return self.source0.get_values(width, height, min_x + np.amin(nx),
+                max_x + np.amax(nx), min_y + np.amin(ny), max_y + np.amax(ny),
+                min_z + nz[0], max_z + nz[0])
+        else:
+            return self.source0.get_values(width, height, 0,0, 0,0, 0,0, use_arrays=[nx, ny, nz])
 
 class ScaleBias(NoiseModule):
     """ Takes the value of source0 and multiplies by scale and adds by bias. """
@@ -805,10 +835,10 @@ class ScaleBias(NoiseModule):
 
         return self.source0.get_value(x, y, z) * self.scale + self.bias
 
-    def get_values(self, width, height, min_x, max_x, min_y, max_y, min_z, max_z=None):
+    def get_values(self, width, height, min_x, max_x, min_y, max_y, min_z, max_z=None, use_arrays=None):
         assert self.source0 is not None
 
-        return self.source0.get_values(width, height, min_x, max_x, min_y, max_y, min_z, max_z) * self.scale + self.bias
+        return self.source0.get_values(width, height, min_x, max_x, min_y, max_y, min_z, max_z, use_arrays) * self.scale + self.bias
 
 class ScalePoint(NoiseModule):
     """ Scales the x,y,z before returning source0 value. """
@@ -824,11 +854,19 @@ class ScalePoint(NoiseModule):
 
         return self.source0.get_value(x * self.sx, y * self.sy, z * self.sz)
 
-    def get_values(self, width, height, min_x, max_x, min_y, max_y, min_z, max_z=None):
+    def get_values(self, width, height, min_x, max_x, min_y, max_y, min_z, max_z=None, use_arrays=None):
         assert self.source0 is not None
 
-        return self.source0.get_values(width, height, min_x * self.sx, max_x * self.sx,
-            min_y * self.sy, max_y * self.sy, min_z * self.sz, max_z * self.sz)
+        if use_arrays is None:
+            return self.source0.get_values(width, height, min_x * self.sx, max_x * self.sx,
+                min_y * self.sy, max_y * self.sy, min_z * self.sz, max_z * self.sz)
+        else:
+            xa, ya, za = use_arrays[0], use_arrays[1], use_arrays[2]
+            xa *= self.sx
+            ya *= self.sy
+            za *= self.sz
+
+            return self.soruce0.get_values(width, height, 0,0, 0,0, 0,0, use_arrays=[xa,ya,za])
 
 class Select(NoiseModule):
     """
@@ -899,14 +937,14 @@ class Select(NoiseModule):
             else:
                 return self.source1.get_value(x, y, z)
 
-    def get_values(self, width, height, min_x, max_x, min_y, max_y, min_z, max_z=None):
+    def get_values(self, width, height, min_x, max_x, min_y, max_y, min_z, max_z=None, use_arrays=None):
         assert self.source0 is not None
         assert self.source1 is not None
         assert self.source2 is not None
 
-        s0a = self.source0.get_values(width, height, min_x, max_x, min_y, max_y, min_z, max_z)
-        s1a = self.source1.get_values(width, height, min_x, max_x, min_y, max_y, min_z, max_z)
-        s2a = self.source2.get_values(width, height, min_x, max_x, min_y, max_y, min_z, max_z)
+        s0a = self.source0.get_values(width, height, min_x, max_x, min_y, max_y, min_z, max_z, use_arrays)
+        s1a = self.source1.get_values(width, height, min_x, max_x, min_y, max_y, min_z, max_z, use_arrays)
+        s2a = self.source2.get_values(width, height, min_x, max_x, min_y, max_y, min_z, max_z, use_arrays)
         rv = np.empty_like(s0a)
 
         if self.edge_falloff > 0:
@@ -961,8 +999,11 @@ class Spheres(NoiseModule):
         print(center, small, large, nearest)
         return 1 - (nearest*4)
 
-    def get_values(self, width, height, min_x, max_x, min_y, max_y, min_z, max_z=None):
-        xa, ya, za = self.create_arrays(width, height, min_x, max_x, min_y, max_y, min_z, max_z)
+    def get_values(self, width, height, min_x, max_x, min_y, max_y, min_z, max_z=None, use_arrays=None):
+        if use_arrays is None:
+            xa, ya, za = self.create_arrays(width, height, min_x, max_x, min_y, max_y, min_z, max_z)
+        else:
+            xa, ya, za = use_arrays[0], use_arrays[1], use_arrays[2]
 
         return gpu.spheres(xa, ya, za)
 
@@ -1038,11 +1079,11 @@ class Terrace(NoiseModule):
 
         return linear_interp(value0, value1, alpha)
 
-    def get_values(self, width, height, min_x, max_x, min_y, max_y, min_z, max_z=None):
+    def get_values(self, width, height, min_x, max_x, min_y, max_y, min_z, max_z=None, use_arrays=None):
         assert self.source0 is not None
         assert len(self.control_points) > 1
 
-        v = self.source0.get_values(width, height, min_x, max_x, min_y, max_y, min_z, max_z)
+        v = self.source0.get_values(width, height, min_x, max_x, min_y, max_y, min_z, max_z, use_arrays)
 
         rv = np.empty_like(v)
 
@@ -1089,11 +1130,19 @@ class TranslatePoint(NoiseModule):
 
         return self.source0.get_value(x+self.xtran, y+self.ytran, z+self.ztran)
 
-    def get_values(self, width, height, min_x, max_x, min_y, max_y, min_z, max_z=None):
+    def get_values(self, width, height, min_x, max_x, min_y, max_y, min_z, max_z=None, use_arrays=None):
         assert self.source0 is not None
 
-        return self.source0.get_values(width, height, min_x+self.xtran, max_x+self.xtran,
-            min_y+self.ytran, max_y+self.ytran, min_z+self.ztran, max_z+self.ztran)
+        if use_arrays is None:
+            return self.source0.get_values(width, height, min_x+self.xtran, max_x+self.xtran,
+                min_y+self.ytran, max_y+self.ytran, min_z+self.ztran, max_z+self.ztran)
+        else:
+            xa, ya, za = use_arrays[0], use_arrays[1], use_arrays[2]
+            xa += self.xtran
+            ya += self.ytran
+            za += self.ztran
+
+            return self.soruce0.get_values(width, height, 0,0, 0,0, 0,0, use_arrays=[xa,ya,za])
 
 class Turbulence(NoiseModule):
     """
@@ -1182,7 +1231,7 @@ class Turbulence(NoiseModule):
 
           return self.source0.get_value(xDistort, yDistort, zDistort)
 
-    def get_values(self, width, height, min_x, max_x, min_y, max_y, min_z, max_z=None):
+    def get_values(self, width, height, min_x, max_x, min_y, max_y, min_z, max_z=None, use_arrays=None):
         x0 = min_x + (12414.0 / 65536.0)
         y0 = min_y + (65124.0 / 65536.0)
         z0 = min_z + (31337.0 / 65536.0)
@@ -1207,7 +1256,15 @@ class Turbulence(NoiseModule):
         ya = np.amin(ya)
         za = np.amin(za)
 
-        return self.source0.get_values(width, height, min_x+xa, max_x+xa, min_y+ya, max_y+ya, min_z+za, max_z+za)
+        if use_arrays is None:
+            return self.source0.get_values(width, height, min_x+xa, max_x+xa, min_y+ya, max_y+ya, min_z+za, max_z+za)
+        else:
+            a,b,c = use_arrays[0], use_arrays[1], use_arrays[2]
+            a += xa
+            b += ya
+            c += za
+
+            return self.source0.get_values(width, height, 0,0, 0,0, 0,0, use_arrays=[a,b,c])
 
 class Voronoi(NoiseModule):
     """
@@ -1297,8 +1354,12 @@ class Voronoi(NoiseModule):
                                                 math.floor(yCan),
                                                 math.floor(zCan), 0))
 
-    def get_values(self, width, height, min_x, max_x, min_y, max_y, min_z, max_z=None):
-        xa, ya, za = self.create_arrays(width, height, min_x, max_x, min_y, max_y, min_z, max_z)
+    def get_values(self, width, height, min_x, max_x, min_y, max_y, min_z, max_z=None, use_arrays=None):
+        if use_arrays is None:
+            xa, ya, za = self.create_arrays(width, height, min_x, max_x, min_y, max_y, min_z, max_z)
+        else:
+            xa, ya, za = use_arrays[0], use_arrays[1], use_arrays[2]
+
         rv = np.empty_like(xa)
 
         for i in range(width*height):

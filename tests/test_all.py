@@ -1,3 +1,6 @@
+import sys
+sys.path.insert(1, '../pynoise/')
+
 from pynoise.noisemodule import *
 from pynoise.noiseutil import *
 import pytest
