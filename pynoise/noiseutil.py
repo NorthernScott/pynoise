@@ -329,12 +329,11 @@ class RenderImage():
                             y_down = -1
                             y_up = 1
 
-                    print(i, 'x:', x, 'y:', y,x_right, width)
                     nc = noisemap[i]
                     nl = noisemap[i+x_left]
                     nr = noisemap[i+x_right]
                     nd = noisemap[i+(y_down*width)+y_down]
-                    nu = noisemap[i+(width*y_up)-1]
+                    nu = noisemap[i+(width*y_up)]
 
                     light_intensity = self.calc_light_intensity(nc, nl, nr, nu, nd)
                     light_intensity *= self.light_brightness
@@ -342,5 +341,5 @@ class RenderImage():
                 bg_color = sRGBColor(1, 1, 1)
                 color = self.calc_dest_color(dest_color, bg_color, light_intensity)
                 t = color.get_upscaled_value_tuple()
-                img.putpixel((x,y), (t[0], t[1], t[2]))
+                img.putpixel((x,height-1-y), (t[0], t[1], t[2]))
         img.save(image_name, 'PNG')
