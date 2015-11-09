@@ -194,46 +194,6 @@ def noise_map_sphere_gpu(width=0, height=0, east_bound=0, west_bound=0,
 
     return source.get_values(width, height, 0,0, 0,0, 0,0, use_arrays=[xa,ya,za])
 
-def smap(width=0, height=0, east_bound=0, west_bound=0,
-    north_bound=0, south_bound=0, source=None):
-
-    longs = np.radians(np.linspace(south_bound, north_bound, width*height))
-    lats = np.radians(np.linspace(west_bound, east_bound, width*height))
-
-    r = np.cos(lats)
-    xam = r * np.cos(longs)
-    yam = r * np.sin(lats)
-    zam = r * np.sin(longs)
-
-    nm = np.zeros(height*width)
-
-    lon_extent = east_bound - west_bound
-    lat_extent = north_bound - south_bound
-    x_delta = lon_extent / width
-    y_delta = lat_extent / height
-    cur_lon = west_bound
-    cur_lat = south_bound
-
-    i = 0
-
-    for y in range(height):
-        cur_lon = west_bound
-        for x in range(width):
-            r = math.cos(math.radians(cur_lat))
-            xa = r * math.cos(math.radians(cur_lon))
-            ya = math.sin(math.radians(cur_lat))
-            za = r * math.sin(math.radians(cur_lon))
-
-            assert xa == xam[i]
-            assert ya == yam[i]
-            assert za == zam[i]
-
-            cur_lon += x_delta
-            i += 1
-        cur_lat += y_delta
-
-
-
 def grayscale_gradient():
     grad = GradientColor()
     grad.add_gradient_point(-1, sRGBColor(0, 0, 0, is_upscaled=True))
@@ -313,7 +273,7 @@ class RenderImage():
 
     def render(self, width, height, noisemap, image_name, gradient):
         img = Image.new('RGB', (width, height), '#ffffff')
-        i = 0
+        i = -1
 
         for y in range(height):
             for x in range(width):
@@ -369,11 +329,12 @@ class RenderImage():
                             y_down = -1
                             y_up = 1
 
-                    nc = noisemap[y][x]
-                    nl = noisemap[y][x+x_left]
-                    nr = noisemap[y][x+x_right]
-                    nd = noisemap[y+y_down][x]
-                    nu = noisemap[y+y_up][x]
+                    print(i, 'x:', x, 'y:', y,x_right, width)
+                    nc = noisemap[i]
+                    nl = noisemap[i+x_left]
+                    nr = noisemap[i+x_right]
+                    nd = noisemap[i+(y_down*width)+y_down]
+                    nu = noisemap[i+(width*y_up)-1]
 
                     light_intensity = self.calc_light_intensity(nc, nl, nr, nu, nd)
                     light_intensity *= self.light_brightness

@@ -13,3 +13,4 @@ doc/build/
 pynoise.egg-info/*
 .cache/
 build/
+quick.py

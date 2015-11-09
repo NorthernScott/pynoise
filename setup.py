@@ -5,7 +5,7 @@ setup(
     include_package_data=True,
     packages = ['pynoise'],
     platforms='any',
-    version = '2.1.0',
+    version = '2.2.1',
     description = 'An implementation of libnoise in python. Allows the creation of verious noise maps using a series of interconnected noise modules.',
     author = 'Tim Butram',
     author_email = 'tim@timchi.me',

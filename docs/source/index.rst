@@ -87,5 +87,7 @@ Tutorials
 ---------
 
  :doc:`tutorial1`
- 
+
  :doc:`tutorial2`
+
+ :doc:`tutorial3`
