@@ -63,3 +63,41 @@ to
 we now get:
 
 .. image:: img/terrain1.png
+
+This brings out some of the detail, but it's still rather boring, so lets increase the
+contrast a bit. We do this by passing the light_contrast variable into RenderImage
+
+    render = RenderImage(light_enabled=True, light_contrast=3)
+
+and now we get:
+
+.. image:: img/terrain2.png
+
+Which shows even more detail, but it's pretty dark (darker than our original without
+lighting even), so lets increase the brightness a bit, with the variable light_brightness
+
+    render = RenderImage(light_enabled=True, light_contrast=3, light_brightness=2)
+
+which results in:
+
+.. image:: img/terrain3.png
+
+which is much brighter, and now we have lots of detail showing.
+
+Tiling terrain height maps
+--------------------------
+
+This biggest advantage of using coherent noise is that you don't have to generate
+everything. You can generate subsections of a map, as you need them, and they will
+stitch together seamlessly.
+
+Here we can shift to the left, and show the previous step next to the shifted one,
+and you'll see that they combine together seamlessly
+
+replace your noisemap with
+
+    noisemap = noise_map_plane(256, 256, 6, 10, 1, 5, perlin)
+
+and view them side by side and you'll see:
+
+.. image:: img/terrain4.png
