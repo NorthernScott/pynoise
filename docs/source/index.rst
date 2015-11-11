@@ -15,7 +15,9 @@ generate, manipulate and render noise in a single package.
 As an example, here is how to output a grayscale 512x512 image of some Perlin
 noise::
 
-    from pynoise import noisemodule.*, noiseutil.*
+    from pynoise.noisemodule import *
+    from pynoise.noiseutil import *
+    
     width, height = 512, 512
     perlin = Perlin()
     noise_map = noise_map_plane(width, height, 2, 6, 1, 5, perlin)
@@ -95,3 +97,7 @@ Tutorials
  :doc:`tutorial4`
 
  :doc:`tutorial5`
+
+ :doc:`tutorial6`
+
+ :doc:`tutorial7`
