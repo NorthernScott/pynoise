@@ -18,7 +18,7 @@ noise::
     from pynoise import noisemodule.*, noiseutil.*
     width, height = 512, 512
     perlin = Perlin()
-    noise_map = noise_map_plane(lower_x=0, upper_x=1, lower_z=0, upper_z=1, width=width, height=height)
+    noise_map = noise_map_plane(width, height, 2, 6, 1, 5, perlin)
     gradient = grayscale_gradient()
 
     render = RenderImage()
@@ -91,3 +91,7 @@ Tutorials
  :doc:`tutorial2`
 
  :doc:`tutorial3`
+
+ :doc:`tutorial4`
+
+ :doc:`tutorial5`

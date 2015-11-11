@@ -725,7 +725,7 @@ class RidgedMulti(NoiseModule):
 
             if weight > 1:
                 weight = 1
-            elif weight < 0:
+            if weight < 0:
                 weight = 0
 
             value += (signal * self.weights[i])
