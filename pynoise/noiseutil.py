@@ -1,21 +1,11 @@
 from sortedcontainers import SortedDict
-from colormath.color_objects import sRGBColor, LabColor
-from colormath.color_conversions import convert_color
 import numpy as np
 from PIL import Image, ImageColor
 from pynoise.util import clamp
 from pynoise.interpolators import linear_interp
+from pynoise.noisemodule import gpu
+from pynoise.colors import Color, linear_interp_colors
 import math
-
-def linear_interp_color(color0, color1, alpha):
-    c0_lab = convert_color(color0, LabColor)
-    c1_lab = convert_color(color1, LabColor)
-
-    nc_l = linear_interp(c0_lab.lab_l, c1_lab.lab_l, alpha)
-    nc_a = linear_interp(c0_lab.lab_a, c1_lab.lab_a, alpha)
-    nc_b = linear_interp(c0_lab.lab_b, c1_lab.lab_b, alpha)
-
-    return convert_color(LabColor(nc_l, nc_a, nc_b), sRGBColor)
 
 class GradientColor():
     gradient_points = SortedDict()
@@ -44,6 +34,36 @@ class GradientColor():
         c1 = self.gradient_points[input1]
 
         return linear_interp_color(c0, c1, alpha)
+
+    def get_colors(self, noisemap):
+        assert (len(self.gradient_points.keys()) > 1)
+        length = noisemap.size
+
+        c0 = [None] * length
+        c1 = [None] * length
+        alpha = np.empty(length)
+
+        for i, nm in enumerate(noisemap):
+            for gpi, p in enumerate(self.gradient_points.keys()):
+                if nm < p:
+                    break
+
+            index0 = clamp(gpi - 1, 0, len(self.gradient_points)-1)
+            index1 = clamp(i, 0, len(self.gradient_points)-1)
+
+            if index0 == index1:
+                c0[i] = self.gradient_points[self.gradient_points.keys()[index1]]
+                c1[i] = self.gradient_points[self.gradient_points.keys()[index1]]
+                continue
+            
+            input0 = self.gradient_points.keys()[index0]
+            input1 = self.gradient_points.keys()[index1]
+            alpha[i] = (nm - input0) / (input1 - input0)
+
+            c0[i] = self.gradient_points[input0]
+            c1[i] = self.gradient_points[input1]
+
+        return linear_interp_colors(c0, c1, alpha)
 
 def noise_map_cylinder(width=0, height=0, lower_angle=0, upper_angle=0,
     lower_height=0, upper_height=0, source=None):
@@ -196,28 +216,28 @@ def noise_map_sphere_gpu(width=0, height=0, east_bound=0, west_bound=0,
 
 def grayscale_gradient():
     grad = GradientColor()
-    grad.add_gradient_point(-1, sRGBColor(0, 0, 0, is_upscaled=True))
-    grad.add_gradient_point(1, sRGBColor(255, 255, 255, is_upscaled=True))
+    grad.add_gradient_point(-1, Color(0, 0, 0))
+    grad.add_gradient_point(1, Color(1, 1, 1))
     return grad
 
 def terrain_gradient():
     grad = GradientColor()
 
-    grad.add_gradient_point(-1.00, sRGBColor(  0,   0, 128, is_upscaled=True))
-    grad.add_gradient_point(-0.20, sRGBColor( 32,  64, 128, is_upscaled=True))
-    grad.add_gradient_point(-0.04, sRGBColor( 64,  96, 192, is_upscaled=True))
-    grad.add_gradient_point(-0.02, sRGBColor(192, 192, 128, is_upscaled=True))
-    grad.add_gradient_point( 0.00, sRGBColor(  0, 192,   0, is_upscaled=True))
-    grad.add_gradient_point( 0.25, sRGBColor(192, 192,   0, is_upscaled=True))
-    grad.add_gradient_point( 0.50, sRGBColor(160,  96,  64, is_upscaled=True))
-    grad.add_gradient_point( 0.75, sRGBColor(128, 255, 255, is_upscaled=True))
-    grad.add_gradient_point( 1.00, sRGBColor(255, 255, 255, is_upscaled=True))
+    grad.add_gradient_point(-1.00, Color(  0,   0, 128/255))
+    grad.add_gradient_point(-0.20, Color( 32/255,  64/255, 128/255))
+    grad.add_gradient_point(-0.04, Color( 64/255,  96/255, 192/255))
+    grad.add_gradient_point(-0.02, Color(192/255, 192/255, 128/255))
+    grad.add_gradient_point( 0.00, Color(  0, 192/255,   0))
+    grad.add_gradient_point( 0.25, Color(192/255, 192/255,   0))
+    grad.add_gradient_point( 0.50, Color(160/255,  96/255,  64/255))
+    grad.add_gradient_point( 0.75, Color(128/255, 1, 1))
+    grad.add_gradient_point( 1.00, Color(1, 1, 1))
 
     return grad
 
 class RenderImage():
     def __init__(self, light_enabled=False, wrap_enabled=False, light_azimuth=45,
-        light_brightness=1, light_color=sRGBColor(1, 1, 1),
+        light_brightness=1, light_color=Color(1, 1, 1),
         light_contrast=1, light_elev=45, light_intensity=1):
         self.light_enabled = light_enabled
         self.wrap_enabled = wrap_enabled
@@ -235,7 +255,7 @@ class RenderImage():
         self.recalc_light = True
 
     def calc_dest_color(self, source, background, light_value):
-        nc = linear_interp_color(background, source, 1)
+        nc = source
 
         if self.light_enabled:
             ncr, ncg, ncb = nc.get_value_tuple()
@@ -248,7 +268,7 @@ class RenderImage():
             ncg *= lcg
             ncb *= lcb
 
-            return sRGBColor(ncr, ncg, ncb)
+            return Color(ncr, ncg, ncb)
         else:
             return nc
 
@@ -273,12 +293,13 @@ class RenderImage():
 
     def render(self, width, height, noisemap, image_name, gradient):
         img = Image.new('RGB', (width, height), '#ffffff')
+        colors = gradient.get_colors(noisemap)
         i = -1
 
         for y in range(height):
             for x in range(width):
-                dest_color = gradient.get_color(noisemap[i])
                 i += 1
+                dest_color = colors[i]
 
                 light_intensity = 1
 
@@ -338,7 +359,7 @@ class RenderImage():
                     light_intensity = self.calc_light_intensity(nc, nl, nr, nu, nd)
                     light_intensity *= self.light_brightness
 
-                bg_color = sRGBColor(1, 1, 1)
+                bg_color = Color(1, 1, 1)
                 color = self.calc_dest_color(dest_color, bg_color, light_intensity)
                 t = color.get_upscaled_value_tuple()
                 img.putpixel((x,height-1-y), (t[0], t[1], t[2]))
