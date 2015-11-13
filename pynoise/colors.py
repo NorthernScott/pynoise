@@ -33,15 +33,13 @@ def linear_interp_colors(colors0, colors1, alpha):
 
     i = 0
 
-    for c0, c1 in zip(colors0, colors1):
-        r0, g0, b0 = c0.r, c0.g, c0.b
-        r1, g1, b1 = c1.r, c1.g, c1.b
-        nc0_r[i] = r0
-        nc0_g[i] = g0
-        nc0_b[i] = b0
-        nc1_r[i] = r1
-        nc1_g[i] = g1
-        nc1_b[i] = b1
+    while i < length:
+        nc0_r[i] = colors0[i].r
+        nc0_g[i] = colors0[i].g
+        nc0_b[i] = colors0[i].b
+        nc1_r[i] = colors1[i].r
+        nc1_g[i] = colors1[i].g
+        nc1_b[i] = colors1[i].b
         i = i + 1
 
 
@@ -52,8 +50,8 @@ def linear_interp_colors(colors0, colors1, alpha):
     rv = [None] * length
     i = 0
 
-    for l, a, b in zip(nci_r, nci_g, nci_b):
-        rv[i] = Color(l, a, b)
+    while i < length:
+        rv[i] = Color(nci_r[i], nci_g[i], nci_b[i])
         i = i+1
 
     return rv
