@@ -18,12 +18,13 @@ start off by creating our own gradient.::
 
     from pynoise.noisemodule import *
     from pynoise.noiseutil import *
+    from pynoise.colors import Color
 
     gradient = GradientColor()
-    gradient.add_gradient_point(-1, sRGBColor(0.125, 0.627, 0))
-    gradient.add_gradient_point(-0.25, sRGBColor(0.87, 0.87, 0))
-    gradient.add_gradient_point(0.25, sRGBColor(0.5, 0.5, 0.5))
-    gradient.add_gradient_point(1, sRGBColor(1, 1, 1))
+    gradient.add_gradient_point(-1, Color(0.125, 0.627, 0))
+    gradient.add_gradient_point(-0.25, Color(0.87, 0.87, 0))
+    gradient.add_gradient_point(0.25, Color(0.5, 0.5, 0.5))
+    gradient.add_gradient_point(1, Color(1, 1, 1))
 
 Which looks like this:
 

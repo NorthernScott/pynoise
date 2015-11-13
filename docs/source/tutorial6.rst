@@ -20,6 +20,7 @@ skipped over it, here it is.
     
     from pynoise.noisemodule import *
     from pynoise.noiseutil import *
+    from pynoise.colors import Color
     
     rmf = RidgedMulti()
     billow = Billow(frequency=2)
@@ -29,10 +30,10 @@ skipped over it, here it is.
     
     
     g = GradientColor()
-    g.add_gradient_point(-1, sRGBColor(0.125, 0.627, 0))
-    g.add_gradient_point(-0.25, sRGBColor(0.87, 0.87, 0))
-    g.add_gradient_point(0.25, sRGBColor(0.5, 0.5, 0.5))
-    g.add_gradient_point(1, sRGBColor(1, 1, 1))
+    g.add_gradient_point(-1, Color(0.125, 0.627, 0))
+    g.add_gradient_point(-0.25, Color(0.87, 0.87, 0))
+    g.add_gradient_point(0.25, Color(0.5, 0.5, 0.5))
+    g.add_gradient_point(1, Color(1, 1, 1))
     
     nm1 = noise_map_plane_gpu(256, 256, 6, 10, 1, 5, final)
     
